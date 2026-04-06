@@ -227,17 +227,14 @@ html {
   touch-action: manipulation;
 }
 
-/* Game container scaling handled by JS (useResponsiveScale) for reliability */
-/* Fallback CSS for non-JS or initial render */
+/* Game container scaling handled by JS (useResponsiveScale) */
 .game-container {
-  transform-origin: top center;
+  transform-origin: top left;
 }
 
-@media (max-width: 600px) {
-  .game-viewport {
-    align-items: flex-start !important;
-    padding-top: 0 !important;
-  }
+/* Use dvh for Safari iOS dynamic viewport height */
+.game-viewport {
+  height: 100dvh;
 }
 
 /* Mobile: hide desktop control hints */
@@ -251,14 +248,6 @@ html {
 body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
-}
-
-/* Safe area insets for notched phones */
-@supports (padding: max(0px)) {
-  .game-viewport {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
 }
 
 /* ===== Improvement #13: Animated HP bar smooth transition ===== */

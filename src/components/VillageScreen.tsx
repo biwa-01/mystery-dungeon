@@ -9,31 +9,28 @@ import { ITEM_TEMPLATES } from '@/engine/data/items';
 import TouchControls from './TouchControls';
 import { GamePhase, MenuMode } from '@/types/game';
 
-// Responsive scaling hook for mobile — returns CSS pixel dimensions
+// Responsive scaling hook for mobile
 function useVillageScale(baseW: number, baseH: number) {
-  const [dims, setDims] = useState({ w: baseW, h: baseH, scale: 1 });
+  const [scale, setScale] = useState(1);
   useEffect(() => {
     function calc() {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const isMobile = vw <= 840 || ('ontouchstart' in window);
-      if (!isMobile) { setDims({ w: baseW, h: baseH, scale: 1 }); return; }
-      const pad = vw <= 600 ? 180 : 0; // space for touch controls
-      const availH = vh - pad;
+      const vw = window.visualViewport?.width ?? window.innerWidth;
+      const vh = window.visualViewport?.height ?? window.innerHeight;
       const sx = vw / baseW;
-      const sy = availH / baseH;
-      const s = Math.min(sx, sy, 1);
-      setDims({ w: Math.floor(baseW * s), h: Math.floor(baseH * s), scale: s });
+      const sy = vh / baseH;
+      setScale(Math.min(sx, sy, 1));
     }
     calc();
     window.addEventListener('resize', calc);
     window.addEventListener('orientationchange', calc);
+    window.visualViewport?.addEventListener('resize', calc);
     return () => {
       window.removeEventListener('resize', calc);
       window.removeEventListener('orientationchange', calc);
+      window.visualViewport?.removeEventListener('resize', calc);
     };
   }, [baseW, baseH]);
-  return dims;
+  return scale;
 }
 
 interface Props {
@@ -328,7 +325,7 @@ type OverlayMode =
 //  Component
 // ================================================================
 export default function VillageScreen({ state, dispatch }: Props) {
-  const { w: displayW, h: displayH, scale: villageScale } = useVillageScale(CW, CH);
+  const villageScale = useVillageScale(CW, CH);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const [assetsReady, setAssetsReady] = useState(_villageAssetsLoaded);
@@ -3620,12 +3617,20 @@ export default function VillageScreen({ state, dispatch }: Props) {
   return (
     <div className="game-viewport h-screen flex flex-col items-center justify-center select-none overflow-hidden"
       style={{ background: '#050508', fontFamily: 'var(--font-game)' }}>
+      {/* Wrapper: actual viewport size, clips the scaled content */}
+      <div style={{
+        width: Math.floor(CW * villageScale),
+        height: Math.floor(CH * villageScale),
+        overflow: 'hidden',
+      }}>
       <div className="game-container relative" style={{
-        width: displayW, height: displayH,
+        width: CW, height: CH,
+        transform: `scale(${villageScale})`,
+        transformOrigin: 'top left',
       }}>
         <canvas
           ref={canvasRef}
-          style={{ position: 'absolute', top: 0, left: 0, width: displayW, height: displayH, imageRendering: 'pixelated' }}
+          style={{ position: 'absolute', top: 0, left: 0, width: CW, height: CH, imageRendering: 'pixelated' }}
         />
 
         {/* Top status bar - enhanced HUD */}
@@ -3755,8 +3760,8 @@ export default function VillageScreen({ state, dispatch }: Props) {
           />
         </div>
 
-        {/* Bottom hint bar */}
-        <div className="absolute bottom-0 left-0 right-0 z-20" style={{
+        {/* Bottom hint bar — hidden on touch devices */}
+        <div className="desktop-hints absolute bottom-0 left-0 right-0 z-20" style={{
           background: 'linear-gradient(0deg, rgba(5,5,8,0.92) 0%, rgba(5,5,8,0.8) 100%)',
           padding: '5px 14px',
           fontSize: 10,
@@ -3800,63 +3805,64 @@ export default function VillageScreen({ state, dispatch }: Props) {
         {/* Overlay panels */}
         {renderOverlay()}
 
-        {/* Mobile touch controls */}
-        <TouchControls dispatch={dispatch} phase={GamePhase.Village} menuMode={MenuMode.None} />
-
-        {/* Village-specific touch buttons */}
-        {overlay === 'none' && (
-          <div className="fixed z-50 pointer-events-none" style={{ bottom: 20, right: 10, touchAction: 'none' }}>
-            <div className="pointer-events-auto flex flex-col items-end gap-2">
-              <button
-                style={{
-                  minWidth: 56, minHeight: 56, borderRadius: 12,
-                  background: 'rgba(201,168,76,0.15)', border: '1.5px solid rgba(201,168,76,0.35)',
-                  color: '#c9a84c', fontSize: 11, fontFamily: 'var(--font-game)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
-                }}
-                onTouchStart={e => { e.preventDefault(); doInteract(); }}
-              >
-                調べる
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Overlay touch controls (dialogue, menus) */}
-        {overlay !== 'none' && (
-          <div className="fixed z-50 pointer-events-none" style={{ bottom: 30, left: '50%', transform: 'translateX(-50%)', touchAction: 'none' }}>
-            <div className="pointer-events-auto flex flex-col items-center gap-3">
-              {overlay !== 'dialogue' && (
-                <button
-                  style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.25)', color: '#c9a84c', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onTouchStart={e => { e.preventDefault(); setOverlayCursor(c => Math.max(0, c - 1)); sfxMenuMove(); }}
-                >▲</button>
-              )}
-              <div className="flex gap-4">
-                <button
-                  style={{ minWidth: 64, minHeight: 48, borderRadius: 12, background: 'rgba(201,168,76,0.06)', border: '1.5px solid rgba(201,168,76,0.18)', color: '#8a7a60', fontSize: 11, fontFamily: 'var(--font-game)', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onTouchStart={e => { e.preventDefault(); setOverlay('none'); }}
-                >戻る</button>
-                <button
-                  style={{ minWidth: 64, minHeight: 48, borderRadius: 12, background: 'rgba(201,168,76,0.15)', border: '1.5px solid rgba(201,168,76,0.35)', color: '#c9a84c', fontSize: 11, fontFamily: 'var(--font-game)', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onTouchStart={e => {
-                    e.preventDefault();
-                    // Simulate Enter key behavior for current overlay
-                    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-                  }}
-                >決定</button>
-              </div>
-              {overlay !== 'dialogue' && (
-                <button
-                  style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.25)', color: '#c9a84c', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onTouchStart={e => { e.preventDefault(); setOverlayCursor(c => c + 1); sfxMenuMove(); }}
-                >▼</button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+      </div>{/* end wrapper */}
+
+      {/* Mobile touch controls — fixed positioning, outside scaled container */}
+      <TouchControls dispatch={dispatch} phase={GamePhase.Village} menuMode={MenuMode.None} />
+
+      {/* Village-specific touch buttons */}
+      {overlay === 'none' && (
+        <div className="fixed z-50 pointer-events-none" style={{ bottom: 20, right: 10, touchAction: 'none' }}>
+          <div className="pointer-events-auto flex flex-col items-end gap-2">
+            <button
+              style={{
+                minWidth: 56, minHeight: 56, borderRadius: 12,
+                background: 'rgba(201,168,76,0.15)', border: '1.5px solid rgba(201,168,76,0.35)',
+                color: '#c9a84c', fontSize: 11, fontFamily: 'var(--font-game)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+              }}
+              onTouchStart={e => { e.preventDefault(); doInteract(); }}
+            >
+              調べる
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay touch controls (dialogue, menus) */}
+      {overlay !== 'none' && (
+        <div className="fixed z-50 pointer-events-none" style={{ bottom: 30, left: '50%', transform: 'translateX(-50%)', touchAction: 'none' }}>
+          <div className="pointer-events-auto flex flex-col items-center gap-3">
+            {overlay !== 'dialogue' && (
+              <button
+                style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.25)', color: '#c9a84c', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                onTouchStart={e => { e.preventDefault(); setOverlayCursor(c => Math.max(0, c - 1)); sfxMenuMove(); }}
+              >▲</button>
+            )}
+            <div className="flex gap-4">
+              <button
+                style={{ minWidth: 64, minHeight: 48, borderRadius: 12, background: 'rgba(201,168,76,0.06)', border: '1.5px solid rgba(201,168,76,0.18)', color: '#8a7a60', fontSize: 11, fontFamily: 'var(--font-game)', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                onTouchStart={e => { e.preventDefault(); setOverlay('none'); }}
+              >戻る</button>
+              <button
+                style={{ minWidth: 64, minHeight: 48, borderRadius: 12, background: 'rgba(201,168,76,0.15)', border: '1.5px solid rgba(201,168,76,0.35)', color: '#c9a84c', fontSize: 11, fontFamily: 'var(--font-game)', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                onTouchStart={e => {
+                  e.preventDefault();
+                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+                }}
+              >決定</button>
+            </div>
+            {overlay !== 'dialogue' && (
+              <button
+                style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.25)', color: '#c9a84c', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                onTouchStart={e => { e.preventDefault(); setOverlayCursor(c => c + 1); sfxMenuMove(); }}
+              >▼</button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

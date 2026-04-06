@@ -29,36 +29,34 @@ import {
   sfxStaffWave, sfxItemPickupMaterial, modulateBGMTension,
 } from '@/engine/audio';
 
-// Responsive scaling hook — returns CSS pixel dimensions to fit 800x600 in viewport
+// Responsive scaling hook — returns scale factor for transform: scale()
 function useResponsiveScale(baseW: number, baseH: number) {
-  const [dims, setDims] = useState({ w: baseW, h: baseH, scale: 1 });
+  const [scale, setScale] = useState(1);
   useEffect(() => {
     function calc() {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const isMobile = vw <= 840 || ('ontouchstart' in window);
-      if (!isMobile) { setDims({ w: baseW, h: baseH, scale: 1 }); return; }
-      const pad = vw <= 600 ? 180 : 0;
-      const availH = vh - pad;
+      // Use visualViewport for accurate mobile dimensions (handles Safari address bar)
+      const vw = window.visualViewport?.width ?? window.innerWidth;
+      const vh = window.visualViewport?.height ?? window.innerHeight;
       const sx = vw / baseW;
-      const sy = availH / baseH;
-      const s = Math.min(sx, sy, 1);
-      setDims({ w: Math.floor(baseW * s), h: Math.floor(baseH * s), scale: s });
+      const sy = vh / baseH;
+      setScale(Math.min(sx, sy, 1));
     }
     calc();
     window.addEventListener('resize', calc);
     window.addEventListener('orientationchange', calc);
+    window.visualViewport?.addEventListener('resize', calc);
     return () => {
       window.removeEventListener('resize', calc);
       window.removeEventListener('orientationchange', calc);
+      window.visualViewport?.removeEventListener('resize', calc);
     };
   }, [baseW, baseH]);
-  return dims;
+  return scale;
 }
 
 export default function GameScreen() {
   const { state, dispatch } = useGame();
-  const { w: displayW, h: displayH, scale: gameScale } = useResponsiveScale(800, 600);
+  const gameScale = useResponsiveScale(800, 600);
 
   const [screenShake, setScreenShake] = useState({ x: 0, y: 0 });
   const [damageFlash, setDamageFlash] = useState(0);
@@ -414,9 +412,17 @@ export default function GameScreen() {
       style={{ background: '#050508', fontFamily: 'var(--font-game)' }}>
 
       {/* Main game container - scales to fit viewport */}
+      {/* Wrapper: actual viewport size, clips the scaled content */}
+      <div style={{
+        width: Math.floor(800 * gameScale),
+        height: Math.floor(600 * gameScale),
+        overflow: 'hidden',
+      }}>
       <div className="game-container relative" style={{
-        width: displayW,
-        height: displayH,
+        width: 800,
+        height: 600,
+        transform: `scale(${gameScale})`,
+        transformOrigin: 'top left',
         // #25: Low HP red border pulse
         boxShadow: lowHpPulse > 0 ? `inset 0 0 ${20 + lowHpPulse * 30}px rgba(200,30,30,${lowHpPulse * 0.4})` : 'none',
         transition: 'box-shadow 0.1s',
@@ -488,13 +494,13 @@ export default function GameScreen() {
               {footItem && (
                 <span style={{ color: '#d0b870' }}>
                   足元: {footItem.name}
-                  <span style={{ color: '#666', marginLeft: '6px' }}>G:拾う</span>
+                  <span className="desktop-hints" style={{ color: '#666', marginLeft: '6px' }}>G:拾う</span>
                 </span>
               )}
               {onStairs && (
                 <span style={{ color: '#e0c050' }}>
                   階段がある
-                  <span style={{ color: '#666', marginLeft: '6px' }}>S:降りる</span>
+                  <span className="desktop-hints" style={{ color: '#666', marginLeft: '6px' }}>S:降りる</span>
                 </span>
               )}
             </div>
@@ -602,6 +608,7 @@ export default function GameScreen() {
         {/* Mobile touch controls */}
         <TouchControls dispatch={dispatch} phase={state.phase} menuMode={state.menuMode} />
       </div>
+      </div>{/* end wrapper */}
 
       <style jsx>{`
         @keyframes deathPulse {

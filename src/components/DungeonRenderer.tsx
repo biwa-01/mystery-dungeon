@@ -1524,7 +1524,7 @@ export default function DungeonRenderer({ state, screenShake, damageFlash, level
 
   if (!assetsLoaded) {
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0e', color: '#8090a0', fontFamily: 'serif', fontSize: 18 }}>
+      <div style={{ width: CW, height: CH, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0e', color: '#8090a0', fontFamily: 'serif', fontSize: 18 }}>
         Loading...
       </div>
     );
@@ -1532,7 +1532,7 @@ export default function DungeonRenderer({ state, screenShake, damageFlash, level
 
   return (
     <canvas ref={cRef} className="torch-flicker"
-      style={{ width: '100%', height: '100%', imageRendering: 'pixelated', borderRadius: '2px',
+      style={{ width: CW, height: CH, imageRendering: 'pixelated', borderRadius: '2px',
         boxShadow: '0 0 40px rgba(0,0,0,0.7)' }}
     />
   );

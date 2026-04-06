@@ -114,6 +114,7 @@ export default function StatusBar({ state }: Props) {
       gap: '12px',
       color: '#e0e0e0',
       whiteSpace: 'nowrap',
+      overflow: 'hidden',
       minHeight: '28px',
     }}>
       {/* #15 Floor number display with dungeon name */}
