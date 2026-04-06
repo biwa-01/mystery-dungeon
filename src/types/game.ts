@@ -189,7 +189,7 @@ export enum MonsterBehavior {
 }
 
 export interface MonsterSpecialAbility {
-  type: 'split' | 'hypnosis' | 'itemify' | 'trapCreate' | 'steal' | 'drain' | 'levelDown' | 'summon' | 'fireBreath' | 'warp';
+  type: 'split' | 'hypnosis' | 'itemify' | 'trapCreate' | 'steal' | 'drain' | 'levelDown' | 'summon' | 'fireBreath' | 'warp' | 'poison' | 'healAlly' | 'explode' | 'stealGold';
   chance: number;
   param?: number;
 }
@@ -215,6 +215,9 @@ export interface Monster {
   droppedItem?: string;
   awakened: boolean;
   lastKnownPlayerPos?: Position;
+  splitCount?: number;
+  hasSummoned?: boolean;
+  statusImmunities?: StatusEffect[];
 }
 
 // ===== Player =====
@@ -240,6 +243,7 @@ export interface Player {
   statuses: StatusInstance[];
   facing: Direction;
   turnCount: number;
+  comboCount: number;
 }
 
 // ===== Dungeon =====
@@ -263,6 +267,8 @@ export interface DungeonFloor {
   stairsPos: Position;
   visible: boolean[][];
   explored: boolean[][];
+  monsterHouseRoom: { x: number; y: number; width: number; height: number } | null;
+  sanctuaryTiles: Position[];
 }
 
 export interface TrapData {
@@ -293,6 +299,7 @@ export interface CombatLog {
 
 export enum GamePhase {
   Title = 'title',
+  Village = 'village',
   Dungeon = 'dungeon',
   Inventory = 'inventory',
   GameOver = 'gameOver',
@@ -325,12 +332,31 @@ export interface GameState {
   dashActive: boolean;
   dashDirection: Direction | null;
   animating: boolean;
+  monsterHouseTriggered: boolean;
+  monsterHouseCleared: boolean;
+  storage: GameItem[];
+  storageCapacity: number;
+  discoveredSecrets: Set<string>;
+  discoveredItemTemplates: Set<string>;
+  villagePos: Position;
+  villageShopSeed: number;
+  // UI overlay states
+  showLogHistory: boolean;
+  showMinimap: boolean;
+  showQuestLog: boolean;
+  inventoryFilter: ItemCategory | 'all';
+  inventorySortMode: 'default' | 'sorted';
+  // Save metadata
+  saveTimestamp: number;
+  playTimeSeconds: number;
+  playTimeLastUpdate: number;
 }
 
 // ===== Actions =====
 
 export type GameAction =
   | { type: 'MOVE'; direction: Direction }
+  | { type: 'ATTACK'; direction: Direction }
   | { type: 'WAIT' }
   | { type: 'DASH_START'; direction: Direction }
   | { type: 'DASH_STOP' }
@@ -351,5 +377,26 @@ export type GameAction =
   | { type: 'MENU_CONFIRM' }
   | { type: 'OPEN_FLOOR_MENU' }
   | { type: 'START_GAME' }
+  | { type: 'NEW_GAME' }
   | { type: 'LOAD_GAME'; state: GameState }
-  | { type: 'RETURN_TO_TITLE' };
+  | { type: 'RETURN_TO_TITLE' }
+  | { type: 'ENTER_DUNGEON' }
+  | { type: 'RETURN_TO_VILLAGE' }
+  | { type: 'BUY_ITEM'; templateId: string; price: number }
+  | { type: 'SELL_ITEM'; itemId: string; price: number }
+  | { type: 'STORE_ITEM'; itemId: string }
+  | { type: 'WITHDRAW_ITEM'; index: number }
+  | { type: 'REMOVE_CURSE'; itemId: string }
+  | { type: 'CHURCH_HEAL'; cost: number }
+  | { type: 'DISCOVER_SECRET'; secretId: string; goldReward?: number }
+  | { type: 'VILLAGE_MOVE'; direction: Direction }
+  | { type: 'TOGGLE_LOG_HISTORY' }
+  | { type: 'TOGGLE_MINIMAP' }
+  | { type: 'TOGGLE_QUEST_LOG' }
+  | { type: 'SET_INVENTORY_FILTER'; filter: ItemCategory | 'all' }
+  | { type: 'TOGGLE_INVENTORY_SORT' }
+  | { type: 'QUICK_REST' }
+  | { type: 'TRAIN'; cost: number }
+  | { type: 'BLACKSMITH_ENHANCE'; itemId: string; cost: number }
+  | { type: 'UPGRADE_STORAGE'; cost: number }
+  | { type: 'WELL_HEAL' };

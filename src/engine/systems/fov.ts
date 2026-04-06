@@ -1,7 +1,19 @@
 import { DungeonFloor, TileType, Position } from '@/types/game';
 import { isInRoom } from '../utils';
 
-export function computeFOV(floor: DungeonFloor, playerPos: Position): void {
+export function getTorchRadius(turnCount: number): number {
+  return 1.0 + Math.sin(turnCount * 0.7) * 0.15;
+}
+
+// #24: Dark rooms - check if room should be dark (floor 12+, ~20% of rooms)
+function isDarkRoom(roomIndex: number, floorNumber: number): boolean {
+  if (floorNumber < 12) return false;
+  // Use room index as a simple deterministic check
+  // About 20% of rooms are dark on eligible floors
+  return (roomIndex * 7 + floorNumber * 13) % 5 === 0;
+}
+
+export function computeFOV(floor: DungeonFloor, playerPos: Position, floorNumber: number = 1): void {
   // Reset visibility
   for (let y = 0; y < floor.height; y++) {
     for (let x = 0; x < floor.width; x++) {
@@ -16,18 +28,34 @@ export function computeFOV(floor: DungeonFloor, playerPos: Position): void {
   const roomIndex = isInRoom(floor, playerPos);
 
   if (roomIndex >= 0) {
-    // In a room: reveal entire room + 1 tile border
-    const room = floor.rooms[roomIndex];
-    for (let y = room.y - 1; y <= room.y + room.height; y++) {
-      for (let x = room.x - 1; x <= room.x + room.width; x++) {
-        if (y >= 0 && y < floor.height && x >= 0 && x < floor.width) {
-          floor.visible[y][x] = true;
-          floor.explored[y][x] = true;
+    // #24: Dark rooms - only reveal 2-tile radius instead of full room
+    if (isDarkRoom(roomIndex, floorNumber)) {
+      // Limited visibility in dark rooms
+      const darkRadius = 2;
+      for (let dy = -darkRadius; dy <= darkRadius; dy++) {
+        for (let dx = -darkRadius; dx <= darkRadius; dx++) {
+          const nx = playerPos.x + dx;
+          const ny = playerPos.y + dy;
+          if (nx >= 0 && nx < floor.width && ny >= 0 && ny < floor.height) {
+            floor.visible[ny][nx] = true;
+            floor.explored[ny][nx] = true;
+          }
         }
       }
+    } else {
+      // Normal room: reveal entire room + 1 tile border
+      const room = floor.rooms[roomIndex];
+      for (let y = room.y - 1; y <= room.y + room.height; y++) {
+        for (let x = room.x - 1; x <= room.x + room.width; x++) {
+          if (y >= 0 && y < floor.height && x >= 0 && x < floor.width) {
+            floor.visible[y][x] = true;
+            floor.explored[y][x] = true;
+          }
+        }
+      }
+      // Also reveal corridor entrances from the room
+      revealCorridorsFromRoom(floor, room);
     }
-    // Also reveal corridor entrances from the room
-    revealCorridorsFromRoom(floor, room);
   }
 
   // Shadowcasting for corridor vision (1-tile radius in corridors)
@@ -35,14 +63,11 @@ export function computeFOV(floor: DungeonFloor, playerPos: Position): void {
 }
 
 function revealCorridorsFromRoom(floor: DungeonFloor, room: { x: number; y: number; width: number; height: number }): void {
-  // Check room borders for corridor connections
   for (let x = room.x; x < room.x + room.width; x++) {
-    // Top border
     if (room.y - 1 >= 0 && floor.tiles[room.y - 1][x] === TileType.Corridor) {
       floor.visible[room.y - 1][x] = true;
       floor.explored[room.y - 1][x] = true;
     }
-    // Bottom border
     const by = room.y + room.height;
     if (by < floor.height && floor.tiles[by][x] === TileType.Corridor) {
       floor.visible[by][x] = true;
@@ -50,12 +75,10 @@ function revealCorridorsFromRoom(floor: DungeonFloor, room: { x: number; y: numb
     }
   }
   for (let y = room.y; y < room.y + room.height; y++) {
-    // Left border
     if (room.x - 1 >= 0 && floor.tiles[y][room.x - 1] === TileType.Corridor) {
       floor.visible[y][room.x - 1] = true;
       floor.explored[y][room.x - 1] = true;
     }
-    // Right border
     const rx = room.x + room.width;
     if (rx < floor.width && floor.tiles[y][rx] === TileType.Corridor) {
       floor.visible[y][rx] = true;
@@ -65,7 +88,6 @@ function revealCorridorsFromRoom(floor: DungeonFloor, room: { x: number; y: numb
 }
 
 function castRays(floor: DungeonFloor, origin: Position): void {
-  // Simple radius-based reveal for corridor navigation
   const radius = 1;
   for (let dy = -radius; dy <= radius; dy++) {
     for (let dx = -radius; dx <= radius; dx++) {
@@ -78,7 +100,7 @@ function castRays(floor: DungeonFloor, origin: Position): void {
     }
   }
 
-  // Extended corridor line-of-sight (see down corridors)
+  // Extended corridor line-of-sight
   const dirs = [
     { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
     { dx: -1, dy: 0 }, { dx: 1, dy: 0 },

@@ -400,6 +400,342 @@ export const SPRITE_DEVIL: SpriteData = fromArt([
   '................',
 ], MV);
 
+// --- BABY SATAN (small purple devil) ---
+const MBS = { p: '#9333ea', P: '#a855f7', Q: '#c084fc', d: '#581c87', e: '#1A1A2E', w: '#ffffff', h: '#6b21a8' };
+export const SPRITE_BABY_SATAN: SpriteData = fromArt([
+  '................',
+  '..hh........hh..',
+  '.hPh..pppp..hPh.',
+  '..h..pPPPPp..h..',
+  '....pPQQQQPp....',
+  '....pPeQQePp....',
+  '....pPwQQwPp....',
+  '....pPQQQQPp....',
+  '....pPQddQPp....',
+  '.....pPPPPp.....',
+  '......pppp......',
+  '.....pp.pp......',
+  '....pp...pp.....',
+  '................',
+  '................',
+  '................',
+], MBS);
+
+// --- ARMY ANT (brown segmented) ---
+const MAA = { b: '#92400e', B: '#b45309', D: '#d97706', d: '#451a03', e: '#1A1A2E', w: '#ffffff' };
+export const SPRITE_ARMY_ANT: SpriteData = fromArt([
+  '................',
+  '..d..........d..',
+  '.dBd........dBd.',
+  '..dBd......dBd..',
+  '...dBbbbbbbBd...',
+  '....BBDBBDBBe...',
+  '...dBBBBBBBBe...',
+  '..dBBeBBBeBBd...',
+  '..dBBwBBBwBBd...',
+  '...BBBBBBBBBd...',
+  '....BBBBBBBB....',
+  '...dd.BBBB.dd...',
+  '..dd..dddd..dd..',
+  '.dd..........dd.',
+  '................',
+  '................',
+], MAA);
+
+// --- LILLIPUT (green archer) ---
+const MLP = { g: '#65a30d', G: '#84cc16', Y: '#bef264', d: '#365314', e: '#1A1A2E', w: '#ffffff', b: '#8B6830', a: '#A0B0C8' };
+export const SPRITE_LILLIPUT: SpriteData = fromArt([
+  '................',
+  '......ggg.......',
+  '.....gGGGg......',
+  '....gGYYYGg.....',
+  '....gGeGGeGg....',
+  '....gGwGGwGg....',
+  '....gGGGGGGg....',
+  '....gGGddGGg....',
+  '.....gGGGGg.aaa.',
+  '....gGGGGGgaaaa.',
+  '...gGGGGGGg.aaa.',
+  '....gGGGGg......',
+  '....gg..gg......',
+  '...gg....gg.....',
+  '..gg......gg....',
+  '................',
+], MLP);
+
+// --- DROLL MAGE (purple robed mage) ---
+const MDM = { p: '#7c3aed', P: '#8b5cf6', Q: '#a78bfa', d: '#4c1d95', e: '#1A1A2E', w: '#ffffff', s: '#FFE060' };
+export const SPRITE_DROLL_MAGE: SpriteData = fromArt([
+  '......ppp.......',
+  '.....pPPPp......',
+  '....pPQQQPp.....',
+  '....pPeQePp.....',
+  '....pPwQwPp.....',
+  '....pPQQQPp.....',
+  '.....pPPPp......',
+  '...pPPPPPPp.....',
+  '..pPPsPPPPPp....',
+  '..pPPssPPPPp....',
+  '..pPPPPPPPPp....',
+  '...pPPPPPPp.....',
+  '....pppppp......',
+  '...pp....pp.....',
+  '..pp......pp....',
+  '................',
+], MDM);
+
+// --- ROTTING CORPSE (green undead) ---
+const MRC = { g: '#4b7a2e', G: '#6b8e23', Y: '#9acd32', d: '#2d4a1c', e: '#FF4444', w: '#ffffff', b: '#3d5a1e' };
+export const SPRITE_ROTTING_CORPSE: SpriteData = fromArt([
+  '................',
+  '.....gggg.......',
+  '....gGGGGg......',
+  '...gGYGGYGg.....',
+  '...gGeGGGeGg....',
+  '...gGGGGGGGg....',
+  '...gGGddGGGg....',
+  '....gGGGGGg.....',
+  '..gggGGGGGggg...',
+  '.gGGGYYYYGGGGg..',
+  '.gGGGYYYYGGGGg..',
+  '..gggGGGGGggg...',
+  '....gGGGGGg.....',
+  '...gg...gg......',
+  '..gg.....gg.....',
+  '................',
+], MRC);
+
+// --- SHADOW (dark gray ghost-like) ---
+const MSH = { g: '#374151', G: '#4b5563', B: '#6b7280', d: '#111827', e: '#ef4444', w: '#ffffff', p: '#1f2937' };
+export const SPRITE_SHADOW: SpriteData = fromArt([
+  '................',
+  '.....GGGG.......',
+  '....GGBBGG......',
+  '...GGBBBBGg.....',
+  '...GGeGGGeGg....',
+  '...GGGGGGGGg....',
+  '...GGBBBBGGg....',
+  '....GGGGGGg.....',
+  '....pGGGGp......',
+  '...pGGGGGGp.....',
+  '..pGpGGpGGpG....',
+  '..p.pGp.pGp.p...',
+  '......p...p.....',
+  '................',
+  '................',
+  '................',
+], MSH);
+
+// --- LAVA GOLEM (orange/red fiery golem) ---
+const MLG = { r: '#dc2626', R: '#ef4444', O: '#f97316', Y: '#fbbf24', d: '#7c2d12', e: '#1A1A2E' };
+export const SPRITE_LAVA_GOLEM: SpriteData = fromArt([
+  '................',
+  '.....rrrr.......',
+  '....rRRRRr......',
+  '...rROOOORr.....',
+  '...rReRRReRr....',
+  '...rRYRRRYRr....',
+  '...rRRddRRRr....',
+  '....rRRRRRr.....',
+  '..rrrRRRRRrrr...',
+  '.rRRROOOORRRRr..',
+  '.rRRROOOORRRRr..',
+  '..rrrRRRRRrrr...',
+  '....rRRRRRr.....',
+  '...rr...rr......',
+  '..rRr...rRr.....',
+  '..rr.....rr.....',
+], MLG);
+
+// --- DANCING JEWEL (cyan sparkling gem) ---
+const MDJ = { c: '#06b6d4', C: '#22d3ee', D: '#67e8f9', W: '#ffffff', d: '#0e7490', s: '#a5f3fc', e: '#1A1A2E' };
+export const SPRITE_DANCING_JEWEL: SpriteData = fromArt([
+  '................',
+  '.......W........',
+  '......WDW.......',
+  '.....WDCDc......',
+  '....WDCsCCc.....',
+  '...WDCsCsCCc....',
+  '...DCCsCCsCc....',
+  '..DCCCCCCCCCd...',
+  '..DCCCCCCCCCd...',
+  '...DCCCCCCCd....',
+  '...dCCCCCCd.....',
+  '....dCCCCd......',
+  '.....dCCd.......',
+  '......dd........',
+  '................',
+  '................',
+], MDJ);
+
+// --- KILLER MACHINE (gray metallic robot) ---
+const MKM = { g: '#6b7280', G: '#9ca3af', B: '#d1d5db', d: '#374151', r: '#ef4444', e: '#1A1A2E', s: '#A0B0C8' };
+export const SPRITE_KILLER_MACHINE: SpriteData = fromArt([
+  '......gggg......',
+  '.....gGGGGg.....',
+  '....gGBBBBGg....',
+  '....grGGGrGg....',
+  '....gGGGGGGg....',
+  '....gGGddGGg....',
+  '.....gGGGGg.....',
+  '..ssgGGGGGgss...',
+  '.sGGGBBBBGGGGs..',
+  '.sGGGBBBBGGGGs..',
+  '..ssgGGGGGgss...',
+  '....gGGGGGg.....',
+  '...gGg..gGg.....',
+  '..gGg....gGg....',
+  '..gg......gg....',
+  '................',
+], MKM);
+
+// --- IRON SCORPION (gray with pincers) ---
+const MIS = { g: '#a3a3a3', G: '#d4d4d4', B: '#e5e5e5', d: '#525252', e: '#1A1A2E', r: '#ef4444', p: '#7c3aed' };
+export const SPRITE_IRON_SCORPION: SpriteData = fromArt([
+  '.gg..........gg.',
+  '.gGg........gGg.',
+  '..gGg......gGg..',
+  '...gGggggggGg...',
+  '....GGGBBGGGe...',
+  '...gGGBBBBGGe...',
+  '..gGGeGBBeGGd...',
+  '..gGGGBBBGGGd...',
+  '...GGGGGGGGGd...',
+  '....GGGGGGGG....',
+  '...gg.GGGG.gg...',
+  '..gg...pp...gg..',
+  '.gg....pp....gg.',
+  '......prrp......',
+  '.......rr.......',
+  '................',
+], MIS);
+
+// --- MAGE CHIMERA (purple with wings) ---
+const MMC = { p: '#8b5cf6', P: '#a78bfa', Q: '#c4b5fd', d: '#4c1d95', e: '#1A1A2E', w: '#ffffff', r: '#ef4444', W: '#ddd6fe' };
+export const SPRITE_MAGE_CHIMERA: SpriteData = fromArt([
+  '..p.............',
+  '.pPp.....ppp....',
+  '.pQPp...pPQPp...',
+  '..pQPpppPQQPp...',
+  '...pPPPPPPPPp...',
+  '...pPePPPePPp...',
+  '...pPwPPPwPPp...',
+  '...pPPPPPPPPp...',
+  '...ppPPrrPPpp...',
+  '..W.pPPPPPPp.W..',
+  '.WW.pPPPPPPp.WW.',
+  'WW.ppPppPppp.WW.',
+  '.W.pp.pp.pp..W..',
+  '...pp.pp.pp.....',
+  '................',
+  '................',
+], MMC);
+
+// --- ARCHMAGE (dark purple robed) ---
+const MAM = { p: '#a21caf', P: '#c026d3', Q: '#d946ef', d: '#701a75', e: '#FFE060', w: '#ffffff', s: '#fbbf24' };
+export const SPRITE_ARCHMAGE: SpriteData = fromArt([
+  '....pppppp......',
+  '...pPPPPPPp.....',
+  '..pPQQQQQQPp....',
+  '..pPeQQQQePp....',
+  '..pPwQQQQwPp....',
+  '..pPQQQQQQPp....',
+  '..pPQQddQQPp....',
+  '...pPPPPPPp.....',
+  '..pPPsPPPPPp....',
+  '.pPPPssPPPPPp...',
+  '.pPPPPPPPPPPp...',
+  '..pPPPPPPPPp....',
+  '...pppppppp.....',
+  '..pp......pp....',
+  '.pp........pp...',
+  '................',
+], MAM);
+
+// --- STONE MAN (dark gray massive) ---
+const MSM = { g: '#57534e', G: '#78716c', B: '#a8a29e', d: '#292524', y: '#fbbf24', e: '#1A1A2E' };
+export const SPRITE_STONE_MAN: SpriteData = fromArt([
+  '................',
+  '.....gggg.......',
+  '....gGGGGg......',
+  '...gGBBBBGg.....',
+  '...gGyGGGyGg....',
+  '...gGGGGGGGg....',
+  '...gGGddGGGg....',
+  '....gGGGGGg.....',
+  '.ggggGGGGGgggg..',
+  'gGGGGBBBBGGGGGg.',
+  'gGGGGBBBBGGGGGg.',
+  '.ggggGGGGGgggg..',
+  '....gGGGGGg.....',
+  '...gGg.gGg......',
+  '..gGGg.gGGg.....',
+  '..ggg...ggg.....',
+], MSM);
+
+// --- REAPER (dark indigo with scythe) ---
+const MRP = { i: '#1e1b4b', I: '#312e81', J: '#3730a3', d: '#0f0d24', e: '#ef4444', w: '#ffffff', s: '#a3a3a3', S: '#d4d4d4' };
+export const SPRITE_REAPER: SpriteData = fromArt([
+  '...SSSSS........',
+  '..SsssssS.......',
+  '..Ss...sS.......',
+  '..Ss..iIIIi.....',
+  '..Ss.iIJJJIi....',
+  '..s.iIeIIeIi....',
+  '.s..iIIIIIIi....',
+  's...iIIddIIi....',
+  '....iIIIIIIi....',
+  '...iIIIIIIIIi...',
+  '..iIIIIIIIIIi...',
+  '...iIIIIIIIi....',
+  '....iiii.iii....',
+  '...ii.....ii....',
+  '..ii.......ii...',
+  '................',
+], MRP);
+
+// --- METAL SLIME (silver shiny blob) ---
+const MMS = { g: '#e5e7eb', G: '#f3f4f6', W: '#ffffff', d: '#9ca3af', e: '#1A1A2E', s: '#d1d5db' };
+export const SPRITE_METAL_SLIME: SpriteData = fromArt([
+  '................',
+  '................',
+  '................',
+  '......GGG.......',
+  '....GGWWWGs.....',
+  '...GWWWWWWGs....',
+  '...GWWWWWWGs....',
+  '..GWWeGWWeGGs...',
+  '..GWWdGWWdGGs...',
+  '..GWWWWWWWGGs...',
+  '..GWWWssWWGGs...',
+  '...GWWWWWGGs....',
+  '....GGGGGG......',
+  '.....ssss.......',
+  '................',
+  '................',
+], MMS);
+
+// --- DARK DREAM (dark red with horns and aura) ---
+const MDD = { r: '#7f1d1d', R: '#991b1b', O: '#b91c1c', d: '#450a0a', e: '#fbbf24', w: '#ffffff', h: '#3b0764', H: '#581c87', f: '#f97316', p: '#a21caf' };
+export const SPRITE_DARK_DREAM: SpriteData = fromArt([
+  '.hH..........Hh.',
+  'hHh...rrrr...hHh',
+  '.h...rRRRRr...h.',
+  '....rROOOORr....',
+  '...rReRRReRRr...',
+  '...rRwRRRwRRr...',
+  '...rRRRRRRRRr...',
+  '...rRRRddRRRr...',
+  'p.rrRRRRRRRRrr.p',
+  'ppRRRRRRRRRRRRpp',
+  'ppRRRRRRRRRRRRpp',
+  'p.rRRRRRRRRRRr.p',
+  '...rRRR..RRRr...',
+  '..rRr......rRr..',
+  '.rRr........rRr.',
+  '................',
+], MDD);
+
 // =================== TILE SPRITES ===================
 
 const T_STAIRS_P = { d: '#6B5A3A', g: '#F0C860', G: '#D4A840', D: '#B08830', b: '#8B6830', k: '#504028' };
@@ -689,14 +1025,36 @@ export const MONSTER_SPRITES: Record<string, SpriteData> = {
   skeleton: SPRITE_SKELETON,
   thief: SPRITE_THIEF,
   mushroom: SPRITE_MUSHROOM,
+  baby_satan: SPRITE_BABY_SATAN,
+  army_ant: SPRITE_ARMY_ANT,
+  lilliput: SPRITE_LILLIPUT,
+  droll_mage: SPRITE_DROLL_MAGE,
   split_slime: SPRITE_POLYGON,
   dragon_pup: SPRITE_DRAGON,
   drain: SPRITE_HONEY,
+  zombie: SPRITE_ROTTING_CORPSE,
+  dragon_child: SPRITE_DRAGON,
+  rotting_corpse: SPRITE_ROTTING_CORPSE,
+  shadow: SPRITE_SHADOW,
+  lava_golem: SPRITE_LAVA_GOLEM,
+  dancing_jewel: SPRITE_DANCING_JEWEL,
+  killer_machine: SPRITE_KILLER_MACHINE,
+  iron_scorpion: SPRITE_IRON_SCORPION,
+  mage_chimera: SPRITE_MAGE_CHIMERA,
+  archmage: SPRITE_ARCHMAGE,
+  stone_man: SPRITE_STONE_MAN,
+  reaper: SPRITE_REAPER,
+  metal_slime: SPRITE_METAL_SLIME,
+  dark_dream: SPRITE_DARK_DREAM,
   minotaur: SPRITE_MINOTAUR,
   golem: SPRITE_GOLEM,
   warper: SPRITE_WARPER,
   summoner: SPRITE_PUPPET,
   devil: SPRITE_DEVIL,
+  king_dragon: SPRITE_DRAGON,
+  skeleton_knight: SPRITE_SKELETON,
+  mimic: SPRITE_PUPPET,
+  wizard: SPRITE_DROLL_MAGE,
 };
 
 export const ITEM_SPRITES: Record<string, SpriteData> = {
@@ -732,6 +1090,33 @@ export function drawSprite(
   ctx.save();
   ctx.globalAlpha = alpha;
 
+  // Pass 1: Black outline (draw 1px offset in all 4 directions)
+  ctx.fillStyle = '#000000';
+  const outlineAlpha = alpha * 0.7;
+  ctx.globalAlpha = outlineAlpha;
+  for (let sy = 0; sy < sprite.length; sy++) {
+    for (let sx = 0; sx < sprite[sy].length; sx++) {
+      const color = sprite[sy][sx];
+      if (!color) continue;
+      const px = x + Math.floor(sx * scaleX);
+      const py = y + Math.floor(sy * scaleY);
+      const pw = Math.ceil(scaleX);
+      const ph = Math.ceil(scaleY);
+      // Check if this pixel is on the edge (has a transparent neighbor)
+      const hasEmptyNeighbor =
+        (sx === 0 || !sprite[sy][sx - 1]) ||
+        (sx >= sprite[sy].length - 1 || !sprite[sy][sx + 1]) ||
+        (sy === 0 || !sprite[sy - 1]?.[sx]) ||
+        (sy >= sprite.length - 1 || !sprite[sy + 1]?.[sx]);
+      if (hasEmptyNeighbor) {
+        ctx.fillRect(px - 1, py, pw + 2, ph);
+        ctx.fillRect(px, py - 1, pw, ph + 2);
+      }
+    }
+  }
+
+  // Pass 2: Actual sprite pixels
+  ctx.globalAlpha = alpha;
   for (let sy = 0; sy < sprite.length; sy++) {
     for (let sx = 0; sx < sprite[sy].length; sx++) {
       const color = sprite[sy][sx];

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   GameState, ItemCategory, WeaponItem, ShieldItem, SealType, StatusEffect,
 } from '@/types/game';
@@ -46,76 +46,7 @@ const SEAL_GLYPHS: Partial<Record<SealType, string>> = {
   [SealType.Healing]: '癒',
 };
 
-function GoldDivider() {
-  return <div className="gold-line my-2" />;
-}
-
-function StatBar({ value, max, colorClass }: { value: number; max: number; colorClass: string }) {
-  const pct = Math.max(0, Math.min(100, (value / max) * 100));
-  return (
-    <div className="w-full h-[6px] rounded-sm overflow-hidden" style={{ background: '#0a0a12', border: '1px solid #1a1520' }}>
-      <div
-        className={`h-full transition-all duration-300 ${colorClass}`}
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
-}
-
-function EquipSlot({ label, item }: { label: string; item: WeaponItem | ShieldItem | null }) {
-  if (!item) {
-    return (
-      <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: '#08080e', border: '1px solid #151218' }}>
-        <span style={{ color: '#2a2530', fontSize: '10px', fontFamily: 'var(--font-display)' }}>{label}</span>
-        <span style={{ color: '#1a1820', fontSize: '11px' }}>―</span>
-      </div>
-    );
-  }
-
-  const enh = item.enhancement >= 0 ? `+${item.enhancement}` : `${item.enhancement}`;
-  return (
-    <div
-      className="px-2 py-1.5 rounded"
-      style={{
-        background: item.cursed ? 'rgba(80,15,25,0.15)' : 'rgba(10,10,18,0.8)',
-        border: `1px solid ${item.cursed ? '#3a1520' : '#1a1520'}`,
-      }}
-    >
-      <div className="flex items-center gap-1.5">
-        <span style={{ color: '#4a4035', fontSize: '10px', fontFamily: 'var(--font-display)' }}>{label}</span>
-        <span style={{ color: item.cursed ? '#8a3030' : '#b0a080', fontSize: '11px', fontWeight: 500 }}>{item.name}</span>
-        <span style={{
-          color: item.enhancement > 0 ? '#5a9a6a' : item.enhancement < 0 ? '#8a3030' : '#4a4035',
-          fontSize: '11px', fontWeight: 700,
-        }}>{enh}</span>
-      </div>
-      {item.seals.length > 0 && (
-        <div className="flex gap-[3px] mt-1 ml-5">
-          {item.seals.map((seal, i) => (
-            <span key={i} style={{
-              fontSize: '9px', padding: '0 3px', borderRadius: '2px',
-              background: 'rgba(100,80,50,0.12)', border: '1px solid rgba(100,80,50,0.15)',
-              color: '#8a7a5a', fontFamily: 'var(--font-body)',
-            }}>
-              {SEAL_GLYPHS[seal] ?? '?'}
-            </span>
-          ))}
-          {Array.from({ length: item.maxSeals - item.seals.length }).map((_, i) => (
-            <span key={`e${i}`} style={{
-              fontSize: '9px', padding: '0 3px', borderRadius: '2px',
-              background: 'rgba(20,20,30,0.5)', border: '1px solid rgba(30,25,20,0.3)',
-              color: '#1a1815',
-            }}>
-              -
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function StatusPanel({ state }: Props) {
+export default function StatusBar({ state }: Props) {
   const { player, floorNumber } = state;
   const weapon = player.equippedWeapon
     ? player.inventory.find(i => i.id === player.equippedWeapon) as WeaponItem | undefined
@@ -127,159 +58,246 @@ export default function StatusPanel({ state }: Props) {
   const def = calculatePlayerDefense(player);
   const hpPct = player.hp / player.maxHp;
   const satPct = player.satiation / player.maxSatiation;
+  const expPct = player.expToNext > 0 ? player.exp / player.expToNext : 0;
+
+  // HP shake
+  const prevHpRef = useRef(player.hp);
+  const [hpShake, setHpShake] = useState(false);
+  useEffect(() => {
+    const diff = prevHpRef.current - player.hp;
+    if (diff > player.maxHp * 0.15) {
+      setHpShake(true);
+      const t = setTimeout(() => setHpShake(false), 400);
+      prevHpRef.current = player.hp;
+      return () => clearTimeout(t);
+    }
+    prevHpRef.current = player.hp;
+  }, [player.hp, player.maxHp]);
+
+  // Gold bounce
+  const prevGoldRef = useRef(player.gold);
+  const [goldBounce, setGoldBounce] = useState(false);
+  useEffect(() => {
+    if (player.gold > prevGoldRef.current) {
+      setGoldBounce(true);
+      const t = setTimeout(() => setGoldBounce(false), 400);
+      prevGoldRef.current = player.gold;
+      return () => clearTimeout(t);
+    }
+    prevGoldRef.current = player.gold;
+  }, [player.gold]);
+
+  const hpColor = hpPct < 0.25 ? '#cc3333' : hpPct < 0.5 ? '#ddaa33' : '#44cc66';
+  const hpBarColor = hpPct < 0.25 ? '#cc3333' : hpPct < 0.5 ? '#aa8a3a' : '#3a8a4a';
+  const hpBarWidth = Math.max(0, Math.min(100, hpPct * 100));
+  const expBarWidth = Math.max(0, Math.min(100, expPct * 100));
+
+  // #3: Enhancement color coding
+  const getEnhColor = (enh: number) => enh < 0 ? '#cc3333' : enh > 0 ? '#44cc66' : '#8a7a5a';
+
+  const weaponLabel = weapon ? `${weapon.name}${weapon.enhancement >= 0 ? '+' : ''}${weapon.enhancement}` : '';
+  const shieldLabel = shield ? `${shield.name}${shield.enhancement >= 0 ? '+' : ''}${shield.enhancement}` : '';
+
+  // #4: Check if equipment is sealed
+  const playerSealed = player.statuses.some(s => s.type === StatusEffect.Sealed);
 
   return (
-    <div
-      className="w-[220px] panel-ornate p-3 flex flex-col"
-      style={{ fontFamily: 'var(--font-game)', fontSize: '11px' }}
-    >
-      {/* Floor Header */}
-      <div className="text-center pb-1.5">
-        <div
-          className="text-glow-gold tracking-[0.2em]"
-          style={{
-            fontFamily: 'var(--font-display)',
-            color: '#c9a84c',
-            fontSize: '16px',
-            fontWeight: 700,
-          }}
-        >
-          {floorNumber}F
-        </div>
-        <div style={{ color: '#2a2520', fontSize: '9px', fontFamily: 'var(--font-display)', letterSpacing: '0.15em' }}>
-          不思議のダンジョン
-        </div>
-      </div>
-
-      <GoldDivider />
-
-      {/* Level + Turn */}
-      <div className="flex justify-between items-baseline mb-2">
-        <span style={{ fontFamily: 'var(--font-display)', color: '#7a9aaa', fontWeight: 700, fontSize: '13px' }}>
-          Lv.{player.level}
+    <div style={{
+      background: 'rgba(0,0,0,0.7)',
+      padding: '4px 12px',
+      fontFamily: 'var(--font-game), monospace',
+      fontSize: '14px',
+      fontWeight: 700,
+      lineHeight: '24px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      color: '#e0e0e0',
+      whiteSpace: 'nowrap',
+      minHeight: '28px',
+    }}>
+      {/* #15 Floor number display with dungeon name */}
+      <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0px' }}>
+        <span style={{ color: '#c9a84c', fontSize: '15px', lineHeight: '16px' }}>{floorNumber}F</span>
+        <span style={{ color: '#5a4d38', fontSize: '8px', lineHeight: '10px', letterSpacing: '0.05em' }}>
+          {floorNumber <= 5 ? '石窟' : floorNumber <= 10 ? '苔洞' : floorNumber <= 15 ? '氷穴' : floorNumber <= 20 ? '溶岩' : floorNumber <= 25 ? '暗黒' : '黄金'}
         </span>
-        <span style={{ color: '#2a2520', fontSize: '9px' }}>
-          Turn {player.turnCount}
-        </span>
-      </div>
+      </span>
 
-      {/* HP */}
-      <div className="mb-2">
-        <div className="flex justify-between mb-0.5">
-          <span style={{ color: '#4a4035', fontSize: '10px' }}>HP</span>
+      {/* Level */}
+      <span style={{ color: '#7a9aaa' }}>Lv.{player.level}</span>
+
+      {/* HP with inline bar + EXP bar below */}
+      <span style={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        gap: '1px',
+        animation: hpShake ? 'hpShake 0.4s ease-out' : 'none',
+      }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ color: '#888', fontSize: '12px' }}>HP</span>
+          <span style={{ color: hpColor }}>{player.hp}</span>
+          <span style={{ color: '#555' }}>/</span>
+          <span style={{ color: '#aaa' }}>{player.maxHp}</span>
           <span style={{
-            color: hpPct < 0.25 ? '#cc3333' : hpPct < 0.5 ? '#aa8a3a' : '#6a9a6a',
-            fontSize: '11px', fontWeight: hpPct < 0.25 ? 700 : 400,
+            display: 'inline-block',
+            width: '48px',
+            height: '6px',
+            background: '#1a1a1a',
+            borderRadius: '2px',
+            overflow: 'hidden',
+            border: '1px solid #333',
+            verticalAlign: 'middle',
           }}>
-            {player.hp} / {player.maxHp}
+            {/* #13 Animated HP bar — smooth transition with glow */}
+            <span style={{
+              display: 'block',
+              width: `${hpBarWidth}%`,
+              height: '100%',
+              background: hpBarColor,
+              transition: 'width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), background 0.3s',
+              boxShadow: hpPct < 0.25 ? `0 0 4px ${hpBarColor}` : 'none',
+            }} />
           </span>
-        </div>
-        <StatBar value={player.hp} max={player.maxHp}
-          colorClass={hpPct < 0.25 ? 'hp-bar-danger' : hpPct < 0.5 ? 'hp-bar-warn' : 'hp-bar-gradient'} />
-      </div>
+        </span>
+        {/* #1: EXP progress bar */}
+        <span style={{
+          display: 'inline-block',
+          width: '48px',
+          height: '3px',
+          background: '#1a1a1a',
+          borderRadius: '1px',
+          overflow: 'hidden',
+          border: '1px solid #222',
+          marginLeft: 'auto',
+        }}>
+          <span style={{
+            display: 'block',
+            width: `${expBarWidth}%`,
+            height: '100%',
+            background: '#3a5aaa',
+            transition: 'width 0.3s',
+          }} />
+        </span>
+      </span>
 
-      {/* Satiation */}
-      <div className="mb-2">
-        <div className="flex justify-between mb-0.5">
-          <span style={{ color: '#4a4035', fontSize: '10px' }}>満腹度</span>
-          <span style={{ color: satPct < 0.2 ? '#cc3333' : '#8a7050', fontSize: '10px' }}>
-            {player.satiation} / {player.maxSatiation}
+      {/* ATK with weapon */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', position: 'relative' }}>
+        <span style={{ color: '#666', fontSize: '11px' }}>ATK</span>
+        <span style={{ color: '#aa5a4a' }}>{atk}</span>
+        {weaponLabel && (
+          <span style={{ color: weapon ? getEnhColor(weapon.enhancement) : '#8a7a5a', fontSize: '11px' }}>
+            ({weaponLabel})
           </span>
-        </div>
-        <StatBar value={player.satiation} max={player.maxSatiation}
-          colorClass={satPct < 0.2 ? 'hp-bar-danger' : 'bg-amber-800'} />
-      </div>
+        )}
+        {/* #4: Sealed indicator on weapon */}
+        {weapon && playerSealed && (
+          <span style={{ color: '#cc3333', fontSize: '10px', fontWeight: 900, position: 'absolute', top: '-2px', right: '-6px' }}>X</span>
+        )}
+      </span>
 
-      {/* EXP */}
-      <div className="mb-1">
-        <div className="flex justify-between mb-0.5">
-          <span style={{ color: '#4a4035', fontSize: '10px' }}>Exp</span>
-          <span style={{ color: '#4a5a7a', fontSize: '10px' }}>
-            {player.exp} / {player.expToNext}
+      {/* DEF with shield */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', position: 'relative' }}>
+        <span style={{ color: '#666', fontSize: '11px' }}>DEF</span>
+        <span style={{ color: '#4a6aaa' }}>{def}</span>
+        {shieldLabel && (
+          <span style={{ color: shield ? getEnhColor(shield.enhancement) : '#8a7a5a', fontSize: '11px' }}>
+            ({shieldLabel})
           </span>
-        </div>
-        <StatBar value={player.exp} max={player.expToNext} colorClass="bg-blue-900" />
-      </div>
+        )}
+        {/* #4: Sealed indicator on shield */}
+        {shield && playerSealed && (
+          <span style={{ color: '#cc3333', fontSize: '10px', fontWeight: 900, position: 'absolute', top: '-2px', right: '-6px' }}>X</span>
+        )}
+      </span>
 
-      <GoldDivider />
+      {/* #16 Strength stat display */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+        <span style={{ color: '#666', fontSize: '11px' }}>力</span>
+        <span style={{ color: '#aa7a4a' }}>{player.strength}</span>
+        <span style={{ color: '#555', fontSize: '10px' }}>/{player.maxStrength}</span>
+      </span>
 
-      {/* Combat Stats Grid */}
-      <div
-        className="grid grid-cols-2 gap-x-3 gap-y-1 p-2 rounded"
-        style={{ background: '#08080e', border: '1px solid #151218' }}
-      >
-        {[
-          { label: 'ATK', value: atk, color: '#aa5a4a' },
-          { label: 'DEF', value: def, color: '#4a6aaa' },
-          { label: 'STR', value: `${player.strength}/${player.maxStrength}`, color: '#aa7a3a' },
-          { label: 'GOLD', value: player.gold, color: '#c9a84c' },
-        ].map(stat => (
-          <div key={stat.label} className="flex items-baseline gap-1.5">
-            <span style={{ color: '#3a3530', fontSize: '9px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-              {stat.label}
-            </span>
-            <span style={{ color: stat.color, fontSize: '12px', fontWeight: 700 }}>
-              {stat.value}
-            </span>
-          </div>
-        ))}
-      </div>
+      {/* Gold */}
+      <span style={{
+        color: '#FFD060',
+        animation: goldBounce ? 'goldBounce 0.4s ease-out' : 'none',
+        textShadow: goldBounce ? '0 0 8px rgba(201,168,76,0.6)' : 'none',
+      }}>
+        {player.gold}G
+      </span>
 
-      <GoldDivider />
+      {/* Satiation + #2: hunger warning icon */}
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '3px',
+        color: satPct <= 0.2 ? '#cc3333' : satPct > 0.5 ? '#5a8a5a' : '#aa8a3a',
+        fontSize: '12px',
+        animation: satPct <= 0.2 ? 'hungerBlink 0.5s ease-in-out infinite' : 'none',
+      }}>
+        {satPct < 0.3 && (
+          <span style={{
+            animation: 'hungerBlink 0.8s ease-in-out infinite',
+            fontSize: '13px',
+          }}>
+            &#x1F4A7;
+          </span>
+        )}
+        <span style={{ color: '#666', fontSize: '11px' }}>満腹</span>
+        {player.satiation}/{player.maxSatiation}
+      </span>
 
-      {/* Equipment Slots */}
-      <div className="space-y-1.5">
-        <EquipSlot label="剣" item={weapon ?? null} />
-        <EquipSlot label="盾" item={shield ?? null} />
-      </div>
+      {/* #5: Turn counter */}
+      <span style={{ color: '#444', fontSize: '10px' }}>T:{player.turnCount}</span>
 
-      {/* Status Effects */}
+      {/* #14 Status effect icons with countdown timers */}
       {player.statuses.length > 0 && (
-        <>
-          <GoldDivider />
-          <div className="flex flex-wrap gap-1">
-            {player.statuses.map((s, i) => (
-              <span
-                key={i}
-                className="text-[9px] px-1.5 py-0.5 rounded"
-                style={{
-                  background: `${STATUS_STYLES[s.type]}15`,
-                  border: `1px solid ${STATUS_STYLES[s.type]}30`,
-                  color: STATUS_STYLES[s.type],
-                }}
-              >
-                {STATUS_LABELS[s.type]} {s.remaining}
+        <span style={{ display: 'inline-flex', gap: '4px', marginLeft: '2px' }}>
+          {player.statuses.map((s, i) => (
+            <span key={i} style={{
+              fontSize: '10px',
+              padding: '0 4px',
+              borderRadius: '2px',
+              background: `${STATUS_STYLES[s.type]}25`,
+              border: `1px solid ${STATUS_STYLES[s.type]}50`,
+              color: STATUS_STYLES[s.type],
+              lineHeight: '16px',
+              animation: s.remaining <= 3 ? 'statusPulse 1s ease-in-out infinite' : 'none',
+              position: 'relative' as const,
+            }}>
+              <span style={{ marginRight: '2px' }}>
+                {s.type === StatusEffect.Poison ? '☠' : s.type === StatusEffect.Sleep ? '💤' : s.type === StatusEffect.Confusion ? '💫' : s.type === StatusEffect.Blind ? '🌑' : s.type === StatusEffect.Slow ? '🐢' : s.type === StatusEffect.Sealed ? '🔒' : s.type === StatusEffect.Paralysis ? '⚡' : ''}
               </span>
-            ))}
-          </div>
-        </>
+              {STATUS_LABELS[s.type]}
+              <span style={{ fontWeight: 700, marginLeft: '1px', color: s.remaining <= 3 ? '#ff6666' : STATUS_STYLES[s.type] }}>
+                {s.remaining}
+              </span>
+            </span>
+          ))}
+        </span>
       )}
 
-      <GoldDivider />
-
-      {/* Inventory gauge */}
-      <div className="flex items-center justify-between">
-        <span style={{ color: '#2a2520', fontSize: '9px' }}>持ち物</span>
-        <div className="flex items-center gap-1.5">
-          <div className="w-14 h-1 rounded-sm overflow-hidden" style={{ background: '#0a0a12', border: '1px solid #151218' }}>
-            <div className="h-full transition-all"
-              style={{
-                width: `${(player.inventory.length / 20) * 100}%`,
-                background: player.inventory.length >= 18 ? '#8a3030' : '#3a3530',
-              }}
-            />
-          </div>
-          <span style={{ color: player.inventory.length >= 18 ? '#8a3030' : '#3a3530', fontSize: '9px' }}>
-            {player.inventory.length}/20
-          </span>
-        </div>
-      </div>
-
-      {/* Keybinds */}
-      <div className="mt-2 pt-1.5 space-y-0.5" style={{ borderTop: '1px solid #12101a', color: '#1a1815', fontSize: '8px' }}>
-        <div>矢印/hjklyubn ― 移動 &nbsp; Shift ― ダッシュ</div>
-        <div>Space 足踏 &nbsp; I 持物 &nbsp; G 拾う &nbsp; S 階段</div>
-      </div>
+      <style jsx>{`
+        @keyframes hungerBlink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        @keyframes hpShake {
+          0% { transform: translate(0, 0); }
+          15% { transform: translate(-3px, 0); }
+          30% { transform: translate(3px, 0); }
+          45% { transform: translate(-2px, 0); }
+          60% { transform: translate(2px, 0); }
+          75% { transform: translate(-1px, 0); }
+          100% { transform: translate(0, 0); }
+        }
+        @keyframes goldBounce {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 }

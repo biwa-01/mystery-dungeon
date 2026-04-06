@@ -86,6 +86,18 @@ export default function GameOverScreen({ state }: Props) {
 
   const quote = DEATH_QUOTES[state.player.turnCount % DEATH_QUOTES.length];
 
+  // 死因推測: ログを逆順に走査して最後のcritical/damageログを取得
+  const deathCause = (() => {
+    if (isVictory) return null;
+    for (let i = state.logs.length - 1; i >= 0; i--) {
+      const log = state.logs[i];
+      if (log.type === 'critical' || log.type === 'damage') {
+        return log.message;
+      }
+    }
+    return '不明な原因';
+  })();
+
   return (
     <div className="relative h-screen w-screen overflow-hidden" style={{ background: '#050508' }}>
       <canvas ref={canvasRef} className="absolute inset-0" />
@@ -150,31 +162,82 @@ export default function GameOverScreen({ state }: Props) {
               {isVictory ? '踏破の記録' : '冒険の記録'}
             </div>
 
+            {/* #25 Death statistics — floor reached, monsters killed estimate, items collected */}
             {[
-              { label: '到達階', value: `${state.floorNumber}F`, color: '#c9a84c' },
+              { label: '到達階層', value: `${state.floorNumber}F`, color: '#c9a84c' },
               { label: 'レベル', value: `Lv.${state.player.level}`, color: '#7a9aaa' },
-              { label: 'ターン', value: `${state.player.turnCount}`, color: '#6b6255' },
-              { label: 'ゴールド', value: `${state.player.gold}G`, color: '#c9a84c' },
+              { label: 'ターン数', value: `${state.player.turnCount}`, color: '#6b6255' },
+              { label: '所持金', value: `${state.player.gold}G`, color: '#c9a84c' },
+              { label: '討伐数(推定)', value: `${state.logs.filter(l => l.message.includes('倒した') || l.message.includes('やっつけた')).length}体`, color: '#aa5a4a' },
+              { label: '収集アイテム', value: `${state.player.inventory.length}個`, color: '#80a040' },
             ].map(row => (
               <div key={row.label} className="flex justify-between py-1" style={{ fontSize: '12px' }}>
                 <span style={{ color: '#3a3530', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>{row.label}</span>
                 <span style={{ color: row.color, fontWeight: 700 }}>{row.value}</span>
               </div>
             ))}
+
+            {/* 死因表示 (GameOverのみ) */}
+            {!isVictory && deathCause && (
+              <div className="mt-2 pt-2" style={{ borderTop: '1px solid #1a1520' }}>
+                <div style={{
+                  color: '#3a3530',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '11px',
+                  letterSpacing: '0.05em',
+                  marginBottom: '4px',
+                }}>
+                  死因
+                </div>
+                <div style={{
+                  color: '#8b2020',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  lineHeight: '1.5',
+                  fontFamily: 'var(--font-body)',
+                }}>
+                  {deathCause}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {showPrompt && (
-          <div className="mt-10 animate-fade-in-up">
+          <div className="mt-10 animate-fade-in-up flex flex-col items-center">
             <div className="w-20 gold-line mx-auto mb-3" />
+            {/* #28 Retry button that goes to title */}
+            <button
+              onClick={() => {
+                // Trigger Enter key event to go back to title
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+              }}
+              style={{
+                fontFamily: 'var(--font-display)',
+                color: isVictory ? '#c9a84c' : '#6b5a40',
+                fontSize: '13px',
+                letterSpacing: '0.15em',
+                background: 'rgba(201,168,76,0.06)',
+                border: '1px solid rgba(201,168,76,0.2)',
+                borderRadius: '4px',
+                padding: '8px 24px',
+                cursor: 'pointer',
+                marginBottom: '8px',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.background = 'rgba(201,168,76,0.12)'; }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'rgba(201,168,76,0.06)'; }}
+            >
+              タイトルに戻る
+            </button>
             <div style={{
               fontFamily: 'var(--font-display)',
-              color: '#3a3530',
-              fontSize: '11px',
-              letterSpacing: '0.15em',
+              color: '#2a2520',
+              fontSize: '10px',
+              letterSpacing: '0.1em',
               animation: 'torchFlicker 2.5s ease-in-out infinite',
             }}>
-              Enter ― タイトルに戻る
+              Enter / タップ
             </div>
           </div>
         )}

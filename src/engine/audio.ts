@@ -14,10 +14,10 @@ function getCtx(): AudioContext {
   if (!ctx) {
     ctx = new AudioContext();
     masterGain = ctx.createGain();
-    masterGain.gain.value = 0.5;
+    masterGain.gain.value = 0.75;
     masterGain.connect(ctx.destination);
     bgmGain = ctx.createGain();
-    bgmGain.gain.value = 0.25;
+    bgmGain.gain.value = 0.55;
     bgmGain.connect(masterGain);
     sfxGain = ctx.createGain();
     sfxGain.gain.value = 0.6;
@@ -49,6 +49,8 @@ function getZone(floor: number) {
 let bgmNodes: AudioNode[] = [];
 let bgmTimers: ReturnType<typeof setTimeout>[] = [];
 let envTimers: ReturnType<typeof setTimeout>[] = [];
+let titleBgmActive = false;
+let villageBgmActive = false;
 
 export function startBGM(floor: number = 1) {
   if (bgmPlaying && currentBgmFloor === floor) return;
@@ -244,6 +246,9 @@ function scheduleWaterDrip() {
 
 export function stopBGM() {
   bgmPlaying = false;
+  titleBgmActive = false;
+  villageBgmActive = false;
+  emergencyBgmActive = false;
   for (const n of bgmNodes) {
     try {
       if ('stop' in n && typeof (n as OscillatorNode).stop === 'function') (n as OscillatorNode).stop();
@@ -263,7 +268,7 @@ export function duckBGM() {
   const ac = getCtx();
   bgmGain.gain.cancelScheduledValues(ac.currentTime);
   bgmGain.gain.setValueAtTime(bgmGain.gain.value, ac.currentTime);
-  bgmGain.gain.linearRampToValueAtTime(0.04, ac.currentTime + 0.15);
+  bgmGain.gain.linearRampToValueAtTime(0.08, ac.currentTime + 0.15);
 }
 
 export function unduckBGM() {
@@ -271,7 +276,7 @@ export function unduckBGM() {
   const ac = getCtx();
   bgmGain.gain.cancelScheduledValues(ac.currentTime);
   bgmGain.gain.setValueAtTime(bgmGain.gain.value, ac.currentTime);
-  bgmGain.gain.linearRampToValueAtTime(0.25, ac.currentTime + 1.2);
+  bgmGain.gain.linearRampToValueAtTime(0.55, ac.currentTime + 1.2);
 }
 
 // Emergency BGM (for shopkeeper theft etc.)
@@ -435,6 +440,12 @@ export function sfxStairs() {
   playSynth('sine', 400, 0.3, 0.15, 100);
   playSynth('triangle', 300, 0.4, 0.1, 80);
   playNoise(0.3, 0.08, 500, 'lowpass');
+  // Deep reverb tail
+  setTimeout(() => {
+    playSynth('sine', 200, 0.6, 0.06, 60);
+    playSynth('sine', 150, 0.8, 0.04, 40);
+    playNoise(0.5, 0.04, 300, 'lowpass');
+  }, 200);
 }
 
 // Level up: triumphant ascending arpeggio with fanfare
@@ -580,7 +591,774 @@ export function sfxDodge() {
   playSynth('sine', 500, 0.06, 0.05, 300);
 }
 
+// Item drop sound (コトッ)
+export function sfxDrop() {
+  playSynth('sine', 300, 0.06, 0.12, 150);
+  playSynth('sine', 180, 0.04, 0.08, 90);
+  playNoise(0.03, 0.06, 2000, 'highpass');
+}
+
+// Whiff / miss swing (空振りの虚無音)
+export function sfxWhiff() {
+  playNoise(0.1, 0.08, 1200, 'bandpass');
+  playSynth('sine', 400, 0.06, 0.04, 200);
+}
+
+// HP pinch heartbeat (HPピンチ心拍音)
+export function sfxHeartbeat() {
+  const ac = getCtx();
+  if (!sfxGain) return;
+  const t = ac.currentTime;
+  // Double thump like a heartbeat
+  playSynth('sine', 50, 0.12, 0.08, 35);
+  setTimeout(() => playSynth('sine', 55, 0.1, 0.06, 30), 120);
+}
+
+// Auto-pickup jingle (自動拾い音)
+export function sfxAutoPickup() {
+  playSynth('sine', 700, 0.06, 0.1);
+  setTimeout(() => playSynth('sine', 900, 0.08, 0.08), 40);
+}
+
+// Slime split/burst sound (ポチャッ)
+export function sfxSplit() {
+  playSynth('sine', 200, 0.12, 0.18, 80);
+  playNoise(0.08, 0.12, 800, 'bandpass');
+  playSynth('sine', 120, 0.15, 0.1, 60);
+  setTimeout(() => {
+    playSynth('sine', 160, 0.1, 0.08, 70);
+    playNoise(0.06, 0.06, 600, 'lowpass');
+  }, 60);
+}
+
+// Hunger stomach growl (ギュルル)
+export function sfxStomachGrowl() {
+  const ac = getCtx();
+  if (!sfxGain) return;
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(60, t);
+  osc.frequency.linearRampToValueAtTime(80, t + 0.15);
+  osc.frequency.linearRampToValueAtTime(50, t + 0.3);
+  osc.frequency.linearRampToValueAtTime(70, t + 0.5);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.04, t);
+  g.gain.linearRampToValueAtTime(0.08, t + 0.15);
+  g.gain.linearRampToValueAtTime(0.02, t + 0.5);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+  const flt = ac.createBiquadFilter();
+  flt.type = 'lowpass';
+  flt.frequency.value = 200;
+  osc.connect(flt).connect(g).connect(sfxGain);
+  osc.start(t);
+  osc.stop(t + 0.7);
+}
+
+// Monster spell charge (magic buildup)
+export function sfxSpellCharge() {
+  playSynth('sine', 300, 0.4, 0.06, 800);
+  playSynth('triangle', 450, 0.35, 0.04, 1200);
+  playNoise(0.3, 0.05, 3000, 'highpass');
+}
+
+// Typewriter click for combat log
+export function sfxTypeClick() {
+  playNoise(0.02, 0.03, 4000, 'highpass');
+}
+
+// Heavy meaty impact sound (グシャッ)
+export function sfxHitMeat() {
+  playSynth('sine', 80, 0.08, 0.25, 30);
+  playNoise(0.06, 0.2, 600, 'lowpass');
+  playSynth('square', 60, 0.1, 0.12, 25, 150);
+}
+
+// Sword swing / whoosh without impact (素振り)
+export function sfxSwing() {
+  playNoise(0.12, 0.15, 1200, 'bandpass');
+  playSynth('sine', 600, 0.08, 0.05, 200);
+}
+
+// Attack miss with "MISS" feel (空振り音 - distinct from sfxWhiff)
+export function sfxMiss2() {
+  playNoise(0.15, 0.12, 900, 'bandpass');
+  playSynth('sine', 500, 0.1, 0.06, 250);
+  // slight descending tone for "failure"
+  setTimeout(() => playSynth('sine', 350, 0.08, 0.04, 200), 80);
+}
+
+// Eating/chewing sound (モシャモシャ)
+export function sfxEatFood() {
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => {
+      playNoise(0.04, 0.12, 800, 'lowpass');
+      playSynth('sine', 120 + Math.random() * 40, 0.03, 0.06, 80);
+    }, i * 70);
+  }
+}
+
+// Gulp/swallow sound (ゴクッ)
+export function sfxDrinkPotion() {
+  playSynth('sine', 300, 0.08, 0.12, 150);
+  setTimeout(() => {
+    playSynth('sine', 200, 0.06, 0.08, 100);
+    playNoise(0.04, 0.06, 500, 'lowpass');
+  }, 50);
+}
+
+// Paper unfurl + magic sound
+export function sfxReadScroll() {
+  playNoise(0.15, 0.1, 3000, 'highpass'); // paper
+  playSynth('sine', 800, 0.2, 0.06, 1200); // magic shimmer
+  setTimeout(() => {
+    playSynth('triangle', 1000, 0.15, 0.04, 1500);
+    playNoise(0.08, 0.05, 5000, 'highpass');
+  }, 100);
+}
+
+// Metal clank for weapon/shield equip
+export function sfxEquip() {
+  playSynth('square', 800, 0.04, 0.15, 300, 2000);
+  playNoise(0.06, 0.12, 3000, 'highpass');
+  playSynth('sine', 400, 0.08, 0.06, 200);
+}
+
+// Ominous curse discovery sound
+export function sfxCurseReveal() {
+  playSynth('sawtooth', 100, 0.3, 0.12, 60, 200);
+  playSynth('sine', 150, 0.25, 0.08, 80);
+  setTimeout(() => playNoise(0.15, 0.08, 400, 'lowpass'), 100);
+}
+
+// Distant monster appearance
+export function sfxMonsterSpawn() {
+  playSynth('sawtooth', 60, 0.2, 0.06, 40, 150);
+  playNoise(0.12, 0.04, 600, 'bandpass');
+}
+
+// Explosive trap trigger (バツン！)
+export function sfxTrapBurst() {
+  playNoise(0.08, 0.3, 2000, 'highpass'); // initial burst
+  playSynth('square', 200, 0.06, 0.25, 50);
+  playSynth('sine', 100, 0.15, 0.15, 30); // sub bass
+  setTimeout(() => {
+    playNoise(0.15, 0.12, 800, 'bandpass'); // debris
+    playSynth('sine', 60, 0.2, 0.08, 25);
+  }, 60);
+}
+
+// Death/game over: BGM stop + dissonant chord
+export function sfxGameOver() {
+  stopBGM();
+  // Dissonant descending chord
+  const ac = getCtx();
+  if (!sfxGain) return;
+  const t = ac.currentTime;
+  const notes = [200, 237, 178, 133]; // tritone-heavy dissonance
+  notes.forEach((freq, i) => {
+    const osc = ac.createOscillator();
+    osc.type = i < 2 ? 'sawtooth' : 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.3, t + 3);
+    const flt = ac.createBiquadFilter();
+    flt.type = 'lowpass';
+    flt.frequency.setValueAtTime(800, t);
+    flt.frequency.exponentialRampToValueAtTime(100, t + 3);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.08, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 3);
+    osc.connect(flt).connect(g).connect(sfxGain!);
+    osc.start(t + i * 0.1);
+    osc.stop(t + 3);
+  });
+}
+
+// Staff waving magic release
+export function sfxStaffWave() {
+  playSynth('sine', 400, 0.15, 0.1, 800);
+  playSynth('triangle', 600, 0.12, 0.06, 1200);
+  playNoise(0.1, 0.08, 4000, 'highpass');
+  setTimeout(() => {
+    playSynth('sine', 800, 0.2, 0.05, 1500);
+  }, 80);
+}
+
+// Material-specific pickup sounds
+export function sfxItemPickupMaterial(category: string) {
+  switch(category) {
+    case 'weapon': case 'shield':
+      // metallic clink
+      playSynth('square', 1500, 0.04, 0.1, 600, 3000);
+      playNoise(0.03, 0.08, 4000, 'highpass');
+      break;
+    case 'herb': case 'food':
+      // soft rustle
+      playNoise(0.06, 0.08, 2000, 'bandpass');
+      playSynth('sine', 400, 0.04, 0.04, 300);
+      break;
+    case 'scroll':
+      // paper crinkle
+      playNoise(0.05, 0.1, 3500, 'highpass');
+      break;
+    case 'gold':
+      // coin jingle
+      playSynth('sine', 2000, 0.06, 0.1, 3000);
+      setTimeout(() => playSynth('sine', 2500, 0.04, 0.08, 3500), 30);
+      setTimeout(() => playSynth('sine', 3000, 0.03, 0.06, 4000), 60);
+      break;
+    default:
+      playSynth('sine', 800, 0.06, 0.06, 400);
+  }
+}
+
+// HP-based BGM tension modulation
+export function modulateBGMTension(hpRatio: number) {
+  if (!bgmGain) return;
+  const ac = getCtx();
+  const now = ac.currentTime;
+  let targetGain: number;
+  if (hpRatio < 0.25) {
+    targetGain = 0.65;
+  } else if (hpRatio < 0.5) {
+    targetGain = 0.6;
+  } else {
+    targetGain = 0.55;
+  }
+  bgmGain.gain.cancelScheduledValues(now);
+  bgmGain.gain.setValueAtTime(bgmGain.gain.value, now);
+  bgmGain.gain.linearRampToValueAtTime(targetGain, now + 0.5);
+}
+
+// ================================================================
+//  TITLE BGM: Ethereal, mysterious atmosphere
+// ================================================================
+
+export function startTitleBGM() {
+  if (titleBgmActive) return;
+  stopBGM();
+  titleBgmActive = true;
+  const ac = getCtx();
+  if (!bgmGain) return;
+  bgmPlaying = true;
+
+  // Layer 1: Deep pad - C minor chord (ethereal)
+  const padNotes = [65.41, 77.78, 98.0]; // C2, Eb2, G2
+  for (const note of padNotes) {
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = note;
+    osc.detune.value = (Math.random() - 0.5) * 6;
+    const flt = ac.createBiquadFilter();
+    flt.type = 'lowpass';
+    flt.frequency.value = 300;
+    flt.Q.value = 0.5;
+    const g = ac.createGain();
+    g.gain.value = 0.06;
+    osc.connect(flt).connect(g).connect(bgmGain);
+    osc.start();
+    bgmNodes.push(osc, flt, g);
+  }
+
+  // Layer 2: High shimmering strings
+  const shimNotes = [523.25, 622.25, 783.99]; // C5, Eb5, G5
+  for (const note of shimNotes) {
+    const osc = ac.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = note;
+    const g = ac.createGain();
+    g.gain.value = 0.012;
+    const lfo = ac.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.08 + Math.random() * 0.04;
+    const lfoG = ac.createGain();
+    lfoG.gain.value = 0.008;
+    lfo.connect(lfoG).connect(g.gain);
+    lfo.start();
+    osc.connect(g).connect(bgmGain);
+    osc.start();
+    bgmNodes.push(osc, g, lfo, lfoG);
+  }
+
+  // Layer 3: Wind noise
+  const noise = ac.createBufferSource();
+  const noiseBuf = ac.createBuffer(1, ac.sampleRate * 10, ac.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  noise.buffer = noiseBuf;
+  noise.loop = true;
+  const nf = ac.createBiquadFilter();
+  nf.type = 'bandpass';
+  nf.frequency.value = 300;
+  nf.Q.value = 0.3;
+  const ng = ac.createGain();
+  ng.gain.value = 0.035;
+  const noiseLfo = ac.createOscillator();
+  noiseLfo.type = 'sine';
+  noiseLfo.frequency.value = 0.04;
+  const noiseLfoG = ac.createGain();
+  noiseLfoG.gain.value = 150;
+  noiseLfo.connect(noiseLfoG).connect(nf.frequency);
+  noiseLfo.start();
+  noise.connect(nf).connect(ng).connect(bgmGain);
+  noise.start();
+  bgmNodes.push(noise, nf, ng, noiseLfo, noiseLfoG);
+
+  // Layer 4: Slow melodic bells (pentatonic)
+  function scheduleTitleBell() {
+    if (!bgmPlaying || !titleBgmActive || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    const scale = [261.63, 311.13, 392.0, 523.25, 622.25, 783.99];
+    const note = scale[Math.floor(Math.random() * scale.length)];
+    const osc = ac2.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = note;
+    const g = ac2.createGain();
+    g.gain.setValueAtTime(0.04, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 5);
+    const rvb = ac2.createBiquadFilter();
+    rvb.type = 'lowpass';
+    rvb.frequency.value = 1500;
+    osc.connect(rvb).connect(g).connect(bgmGain!);
+    osc.start(t);
+    osc.stop(t + 5);
+    const timer = setTimeout(scheduleTitleBell, 4000 + Math.random() * 6000);
+    bgmTimers.push(timer);
+  }
+  const t1 = setTimeout(scheduleTitleBell, 1000);
+  bgmTimers.push(t1);
+
+  // Layer 5: Sub-bass heartbeat pulse
+  function scheduleTitlePulse() {
+    if (!bgmPlaying || !titleBgmActive || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    const osc = ac2.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(40, t);
+    osc.frequency.exponentialRampToValueAtTime(25, t + 1.5);
+    const g = ac2.createGain();
+    g.gain.setValueAtTime(0.06, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+    osc.connect(g).connect(bgmGain!);
+    osc.start(t);
+    osc.stop(t + 1.5);
+    const timer = setTimeout(scheduleTitlePulse, 6000 + Math.random() * 4000);
+    bgmTimers.push(timer);
+  }
+  const t2 = setTimeout(scheduleTitlePulse, 3000);
+  bgmTimers.push(t2);
+}
+
+export function stopTitleBGM() {
+  titleBgmActive = false;
+  stopBGM();
+}
+
+// ================================================================
+//  VILLAGE BGM: Warm, peaceful medieval atmosphere
+// ================================================================
+
+export function startVillageBGM() {
+  if (villageBgmActive) return;
+  stopBGM();
+  villageBgmActive = true;
+  const ac = getCtx();
+  if (!bgmGain) return;
+  bgmPlaying = true;
+
+  // Layer 1: Warm major pad (F major)
+  const padNotes = [87.31, 110.0, 130.81]; // F2, A2, C3
+  for (const note of padNotes) {
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = note;
+    osc.detune.value = (Math.random() - 0.5) * 5;
+    const flt = ac.createBiquadFilter();
+    flt.type = 'lowpass';
+    flt.frequency.value = 350;
+    flt.Q.value = 0.4;
+    const g = ac.createGain();
+    g.gain.value = 0.05;
+    osc.connect(flt).connect(g).connect(bgmGain);
+    osc.start();
+    bgmNodes.push(osc, flt, g);
+  }
+
+  // Layer 2: Gentle triangle wave harmonics
+  const harmNotes = [349.23, 440.0, 523.25]; // F4, A4, C5
+  for (const note of harmNotes) {
+    const osc = ac.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = note;
+    const g = ac.createGain();
+    g.gain.value = 0.015;
+    const lfo = ac.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.15 + Math.random() * 0.1;
+    const lg = ac.createGain();
+    lg.gain.value = 0.01;
+    lfo.connect(lg).connect(g.gain);
+    lfo.start();
+    osc.connect(g).connect(bgmGain);
+    osc.start();
+    bgmNodes.push(osc, g, lfo, lg);
+  }
+
+  // Layer 3: Birdsong chirps
+  function scheduleBird() {
+    if (!bgmPlaying || !villageBgmActive || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    const baseFreq = 1800 + Math.random() * 1200;
+    // 2-3 chirp notes
+    const chirps = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < chirps; i++) {
+      const osc = ac2.createOscillator();
+      osc.type = 'sine';
+      const f = baseFreq + (Math.random() - 0.5) * 400;
+      osc.frequency.setValueAtTime(f, t + i * 0.08);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.8, t + i * 0.08 + 0.06);
+      const g = ac2.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.setValueAtTime(0.02, t + i * 0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.07);
+      osc.connect(g).connect(bgmGain!);
+      osc.start(t + i * 0.08);
+      osc.stop(t + i * 0.08 + 0.08);
+    }
+    const timer = setTimeout(scheduleBird, 5000 + Math.random() * 8000);
+    bgmTimers.push(timer);
+  }
+  const t1 = setTimeout(scheduleBird, 2000);
+  bgmTimers.push(t1);
+
+  // Layer 4: Gentle harp melody (pentatonic F major)
+  function scheduleHarp() {
+    if (!bgmPlaying || !villageBgmActive || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    const scale = [349.23, 392.0, 440.0, 523.25, 587.33, 698.46]; // F4 G4 A4 C5 D5 F5
+    const numNotes = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < numNotes; i++) {
+      const note = scale[Math.floor(Math.random() * scale.length)];
+      const osc = ac2.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = note;
+      const g = ac2.createGain();
+      const start = t + i * 0.2;
+      g.gain.setValueAtTime(0.03, start);
+      g.gain.exponentialRampToValueAtTime(0.001, start + 2);
+      osc.connect(g).connect(bgmGain!);
+      osc.start(start);
+      osc.stop(start + 2);
+    }
+    const timer = setTimeout(scheduleHarp, 6000 + Math.random() * 5000);
+    bgmTimers.push(timer);
+  }
+  const t2 = setTimeout(scheduleHarp, 1500);
+  bgmTimers.push(t2);
+
+  // Layer 5: Gentle breeze noise
+  const wind = ac.createBufferSource();
+  const windBuf = ac.createBuffer(1, ac.sampleRate * 10, ac.sampleRate);
+  const wd = windBuf.getChannelData(0);
+  for (let i = 0; i < wd.length; i++) wd[i] = Math.random() * 2 - 1;
+  wind.buffer = windBuf;
+  wind.loop = true;
+  const wf = ac.createBiquadFilter();
+  wf.type = 'lowpass';
+  wf.frequency.value = 400;
+  wf.Q.value = 0.3;
+  const wg = ac.createGain();
+  wg.gain.value = 0.02;
+  const wlfo = ac.createOscillator();
+  wlfo.type = 'sine';
+  wlfo.frequency.value = 0.03;
+  const wlg = ac.createGain();
+  wlg.gain.value = 100;
+  wlfo.connect(wlg).connect(wf.frequency);
+  wlfo.start();
+  wind.connect(wf).connect(wg).connect(bgmGain);
+  wind.start();
+  bgmNodes.push(wind, wf, wg, wlfo, wlg);
+
+  // Layer 6: Distant church bell (occasional)
+  function scheduleChurchBell() {
+    if (!bgmPlaying || !villageBgmActive || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    // Rich bell harmonics
+    const bellFreqs = [523.25, 659.25, 783.99, 1046.5];
+    for (const freq of bellFreqs) {
+      const osc = ac2.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const g = ac2.createGain();
+      const vol = freq === 523.25 ? 0.025 : 0.008;
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 4);
+      osc.connect(g).connect(bgmGain!);
+      osc.start(t);
+      osc.stop(t + 4);
+    }
+    const timer = setTimeout(scheduleChurchBell, 15000 + Math.random() * 20000);
+    bgmTimers.push(timer);
+  }
+  const t3 = setTimeout(scheduleChurchBell, 5000);
+  bgmTimers.push(t3);
+}
+
+export function stopVillageBGM() {
+  villageBgmActive = false;
+  stopBGM();
+}
+
+// #21: Combat BGM for monster house encounters (faster, more intense)
+let combatBgmActive = false;
+export function startCombatBGM() {
+  if (combatBgmActive) return;
+  stopBGM();
+  combatBgmActive = true;
+  const ac = getCtx();
+  if (!bgmGain) return;
+  bgmPlaying = true;
+
+  // Fast aggressive bass drone
+  const drone = ac.createOscillator();
+  drone.type = 'sawtooth';
+  drone.frequency.value = 55;
+  const flt = ac.createBiquadFilter();
+  flt.type = 'lowpass';
+  flt.frequency.value = 350;
+  const g = ac.createGain();
+  g.gain.value = 0.16;
+  drone.connect(flt).connect(g).connect(bgmGain);
+  drone.start();
+  bgmNodes.push(drone, flt, g);
+
+  // Fast tremolo
+  const lfo = ac.createOscillator();
+  lfo.type = 'square';
+  lfo.frequency.value = 8;
+  const lg = ac.createGain();
+  lg.gain.value = 0.08;
+  lfo.connect(lg).connect(g.gain);
+  lfo.start();
+  bgmNodes.push(lfo, lg);
+
+  // High tension strings
+  const strNotes = [110, 164.81, 220];
+  for (const note of strNotes) {
+    const osc = ac.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = note;
+    const sf = ac.createBiquadFilter();
+    sf.type = 'lowpass';
+    sf.frequency.value = 700;
+    const sg = ac.createGain();
+    sg.gain.value = 0.04;
+    osc.connect(sf).connect(sg).connect(bgmGain);
+    osc.start();
+    bgmNodes.push(osc, sf, sg);
+  }
+
+  // Fast timpani pulse
+  function scheduleCombatPulse() {
+    if (!bgmPlaying || !combatBgmActive || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    const osc = ac2.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(45, t);
+    osc.frequency.exponentialRampToValueAtTime(25, t + 0.3);
+    const pg = ac2.createGain();
+    pg.gain.setValueAtTime(0.1, t);
+    pg.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc.connect(pg).connect(bgmGain!);
+    osc.start(t);
+    osc.stop(t + 0.3);
+    const timer = setTimeout(scheduleCombatPulse, 400 + Math.random() * 200);
+    bgmTimers.push(timer);
+  }
+  const t1 = setTimeout(scheduleCombatPulse, 200);
+  bgmTimers.push(t1);
+}
+
+export function stopCombatBGM() {
+  combatBgmActive = false;
+  stopBGM();
+}
+
+// #22: Boss floor BGM variant for floor 10, 20, 30
+export function startBossFloorBGM(floor: number) {
+  stopBGM();
+  const ac = getCtx();
+  if (!bgmGain) return;
+  bgmPlaying = true;
+
+  // Different key based on boss floor
+  const bossKeys: Record<number, { root: number; fifth: number; minor3: number }> = {
+    10: { root: 73.42, fifth: 110.0, minor3: 87.31 },   // D minor
+    20: { root: 55.0, fifth: 82.41, minor3: 65.41 },     // A minor
+    30: { root: 46.25, fifth: 69.30, minor3: 55.0 },     // G# minor
+  };
+  const key = bossKeys[floor] || bossKeys[10];
+
+  // Deep ominous drone
+  const drone = ac.createOscillator();
+  drone.type = 'sawtooth';
+  drone.frequency.value = key.root;
+  const df = ac.createBiquadFilter();
+  df.type = 'lowpass';
+  df.frequency.value = 250;
+  df.Q.value = 3;
+  const dg = ac.createGain();
+  dg.gain.value = 0.18;
+  drone.connect(df).connect(dg).connect(bgmGain);
+  drone.start();
+  bgmNodes.push(drone, df, dg);
+
+  // Dissonant chord
+  const chordNotes = [key.root * 2, key.minor3 * 2, key.fifth];
+  for (const note of chordNotes) {
+    const osc = ac.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = note;
+    osc.detune.value = (Math.random() - 0.5) * 15;
+    const f = ac.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 500;
+    const cg = ac.createGain();
+    cg.gain.value = 0.03;
+    osc.connect(f).connect(cg).connect(bgmGain);
+    osc.start();
+    bgmNodes.push(osc, f, cg);
+  }
+
+  // Slow heavy pulse
+  function scheduleBossPulse() {
+    if (!bgmPlaying || !bgmGain) return;
+    const ac2 = getCtx();
+    const t = ac2.currentTime;
+    const osc = ac2.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(key.root * 0.5, t);
+    osc.frequency.exponentialRampToValueAtTime(key.root * 0.25, t + 1.2);
+    const pg = ac2.createGain();
+    pg.gain.setValueAtTime(0.1, t);
+    pg.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    osc.connect(pg).connect(bgmGain!);
+    osc.start(t);
+    osc.stop(t + 1.2);
+    const timer = setTimeout(scheduleBossPulse, 2500 + Math.random() * 1000);
+    bgmTimers.push(timer);
+  }
+  const t1 = setTimeout(scheduleBossPulse, 500);
+  bgmTimers.push(t1);
+}
+
+// #23: Victory fanfare when clearing a floor
+export function sfxVictoryFanfare() {
+  duckBGM();
+  const notes = [523, 587, 659, 784, 880, 1047]; // C5 D5 E5 G5 A5 C6
+  notes.forEach((n, i) => {
+    setTimeout(() => {
+      playSynth('sine', n, 0.25, 0.12);
+      playSynth('triangle', n * 0.5, 0.3, 0.06);
+    }, i * 100);
+  });
+  // Final major chord
+  setTimeout(() => {
+    playSynth('sine', 1047, 0.6, 0.1);
+    playSynth('sine', 784, 0.6, 0.08);
+    playSynth('sine', 659, 0.6, 0.06);
+    playSynth('sine', 523, 0.6, 0.05);
+  }, 600);
+  setTimeout(unduckBGM, 1800);
+}
+
+// #24: Ambient rain sound effect for water-heavy floors
+let rainActive = false;
+let rainNodes: AudioNode[] = [];
+export function startRainAmbience() {
+  if (rainActive) return;
+  rainActive = true;
+  const ac = getCtx();
+  if (!bgmGain) return;
+
+  const noise = ac.createBufferSource();
+  const noiseBuf = ac.createBuffer(1, ac.sampleRate * 10, ac.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  noise.buffer = noiseBuf;
+  noise.loop = true;
+  const nf = ac.createBiquadFilter();
+  nf.type = 'lowpass';
+  nf.frequency.value = 800;
+  nf.Q.value = 0.3;
+  const ng = ac.createGain();
+  ng.gain.value = 0.06;
+  // Slow volume modulation for realistic rain
+  const rlfo = ac.createOscillator();
+  rlfo.type = 'sine';
+  rlfo.frequency.value = 0.05;
+  const rlg = ac.createGain();
+  rlg.gain.value = 0.02;
+  rlfo.connect(rlg).connect(ng.gain);
+  rlfo.start();
+  noise.connect(nf).connect(ng).connect(bgmGain);
+  noise.start();
+  rainNodes.push(noise, nf, ng, rlfo, rlg);
+}
+
+export function stopRainAmbience() {
+  rainActive = false;
+  for (const n of rainNodes) {
+    try {
+      if ('stop' in n && typeof (n as OscillatorNode).stop === 'function') (n as OscillatorNode).stop();
+      if ('disconnect' in n) n.disconnect();
+    } catch { /* ignore */ }
+  }
+  rainNodes = [];
+}
+
+// #25: Menu open/close sound effects
+export function sfxMenuOpen() {
+  playSynth('sine', 600, 0.08, 0.1);
+  setTimeout(() => playSynth('sine', 800, 0.06, 0.08), 40);
+  setTimeout(() => playSynth('sine', 1000, 0.04, 0.06), 80);
+}
+
+export function sfxMenuClose() {
+  playSynth('sine', 1000, 0.06, 0.08);
+  setTimeout(() => playSynth('sine', 700, 0.08, 0.06), 40);
+}
+
+// #26: Equipment change sound (different from pickup)
+export function sfxEquipChange() {
+  // Metallic ringing + leather creak
+  playSynth('square', 1200, 0.05, 0.12, 500, 2500);
+  playNoise(0.06, 0.08, 3500, 'highpass');
+  setTimeout(() => {
+    playSynth('sine', 600, 0.1, 0.08, 300);
+    playNoise(0.04, 0.06, 1000, 'lowpass'); // leather
+  }, 40);
+  setTimeout(() => playSynth('sine', 800, 0.08, 0.05, 400), 80);
+}
+
 // Initialize audio on first user interaction
-export function initAudio() {
-  getCtx();
+// Returns a promise that resolves when AudioContext is fully active
+export async function initAudio(): Promise<void> {
+  const ac = getCtx();
+  if (ac.state === 'suspended') {
+    await ac.resume();
+  }
+  // Some browsers need a silent buffer play to fully unlock audio
+  const silent = ac.createBufferSource();
+  const buf = ac.createBuffer(1, 1, ac.sampleRate);
+  silent.buffer = buf;
+  silent.connect(ac.destination);
+  silent.start();
 }
