@@ -9,17 +9,21 @@ import { ITEM_TEMPLATES } from '@/engine/data/items';
 import TouchControls from './TouchControls';
 import { GamePhase, MenuMode } from '@/types/game';
 
-// Responsive scaling hook for mobile
+// Responsive scaling hook for mobile — returns CSS pixel dimensions
 function useVillageScale(baseW: number, baseH: number) {
-  const [scale, setScale] = useState(1);
+  const [dims, setDims] = useState({ w: baseW, h: baseH, scale: 1 });
   useEffect(() => {
     function calc() {
-      const isMobile = window.innerWidth <= 840 || ('ontouchstart' in window);
-      if (!isMobile) { setScale(1); return; }
-      const availH = window.innerHeight - (window.innerWidth <= 600 ? 180 : 0);
-      const sx = window.innerWidth / baseW;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const isMobile = vw <= 840 || ('ontouchstart' in window);
+      if (!isMobile) { setDims({ w: baseW, h: baseH, scale: 1 }); return; }
+      const pad = vw <= 600 ? 180 : 0; // space for touch controls
+      const availH = vh - pad;
+      const sx = vw / baseW;
       const sy = availH / baseH;
-      setScale(Math.min(sx, sy, 1));
+      const s = Math.min(sx, sy, 1);
+      setDims({ w: Math.floor(baseW * s), h: Math.floor(baseH * s), scale: s });
     }
     calc();
     window.addEventListener('resize', calc);
@@ -29,7 +33,7 @@ function useVillageScale(baseW: number, baseH: number) {
       window.removeEventListener('orientationchange', calc);
     };
   }, [baseW, baseH]);
-  return scale;
+  return dims;
 }
 
 interface Props {
@@ -324,7 +328,7 @@ type OverlayMode =
 //  Component
 // ================================================================
 export default function VillageScreen({ state, dispatch }: Props) {
-  const villageScale = useVillageScale(CW, CH);
+  const { w: displayW, h: displayH, scale: villageScale } = useVillageScale(CW, CH);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const [assetsReady, setAssetsReady] = useState(_villageAssetsLoaded);
@@ -3617,13 +3621,11 @@ export default function VillageScreen({ state, dispatch }: Props) {
     <div className="game-viewport h-screen flex flex-col items-center justify-center select-none overflow-hidden"
       style={{ background: '#050508', fontFamily: 'var(--font-game)' }}>
       <div className="game-container relative" style={{
-        width: CW, height: CH,
-        transform: villageScale < 1 ? `scale(${villageScale})` : undefined,
-        transformOrigin: 'top center',
+        width: displayW, height: displayH,
       }}>
         <canvas
           ref={canvasRef}
-          style={{ position: 'absolute', top: 0, left: 0, width: CW, height: CH, imageRendering: 'pixelated' }}
+          style={{ position: 'absolute', top: 0, left: 0, width: displayW, height: displayH, imageRendering: 'pixelated' }}
         />
 
         {/* Top status bar - enhanced HUD */}

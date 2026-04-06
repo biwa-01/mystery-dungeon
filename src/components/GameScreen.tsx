@@ -29,18 +29,21 @@ import {
   sfxStaffWave, sfxItemPickupMaterial, modulateBGMTension,
 } from '@/engine/audio';
 
-// Responsive scaling hook — calculates CSS scale to fit 800x600 in viewport
+// Responsive scaling hook — returns CSS pixel dimensions to fit 800x600 in viewport
 function useResponsiveScale(baseW: number, baseH: number) {
-  const [scale, setScale] = useState(1);
+  const [dims, setDims] = useState({ w: baseW, h: baseH, scale: 1 });
   useEffect(() => {
     function calc() {
-      const isMobile = window.innerWidth <= 840 || ('ontouchstart' in window);
-      if (!isMobile) { setScale(1); return; }
-      // On mobile, leave space for touch controls (bottom ~200px)
-      const availH = window.innerHeight - (window.innerWidth <= 600 ? 180 : 0);
-      const sx = window.innerWidth / baseW;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const isMobile = vw <= 840 || ('ontouchstart' in window);
+      if (!isMobile) { setDims({ w: baseW, h: baseH, scale: 1 }); return; }
+      const pad = vw <= 600 ? 180 : 0;
+      const availH = vh - pad;
+      const sx = vw / baseW;
       const sy = availH / baseH;
-      setScale(Math.min(sx, sy, 1));
+      const s = Math.min(sx, sy, 1);
+      setDims({ w: Math.floor(baseW * s), h: Math.floor(baseH * s), scale: s });
     }
     calc();
     window.addEventListener('resize', calc);
@@ -50,12 +53,12 @@ function useResponsiveScale(baseW: number, baseH: number) {
       window.removeEventListener('orientationchange', calc);
     };
   }, [baseW, baseH]);
-  return scale;
+  return dims;
 }
 
 export default function GameScreen() {
   const { state, dispatch } = useGame();
-  const gameScale = useResponsiveScale(800, 600);
+  const { w: displayW, h: displayH, scale: gameScale } = useResponsiveScale(800, 600);
 
   const [screenShake, setScreenShake] = useState({ x: 0, y: 0 });
   const [damageFlash, setDamageFlash] = useState(0);
@@ -412,10 +415,8 @@ export default function GameScreen() {
 
       {/* Main game container - scales to fit viewport */}
       <div className="game-container relative" style={{
-        width: 800,
-        height: 600,
-        transform: gameScale < 1 ? `scale(${gameScale})` : undefined,
-        transformOrigin: 'top center',
+        width: displayW,
+        height: displayH,
         // #25: Low HP red border pulse
         boxShadow: lowHpPulse > 0 ? `inset 0 0 ${20 + lowHpPulse * 30}px rgba(200,30,30,${lowHpPulse * 0.4})` : 'none',
         transition: 'box-shadow 0.1s',
