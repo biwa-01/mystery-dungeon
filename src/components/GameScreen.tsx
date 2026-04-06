@@ -401,7 +401,7 @@ export default function GameScreen() {
 
   if (state.phase === GamePhase.Title) return <TitleScreen dispatch={dispatch} />;
   if (state.phase === GamePhase.Village) return <VillageScreen state={state} dispatch={dispatch} />;
-  if (state.phase === GamePhase.GameOver || state.phase === GamePhase.Victory) return <GameOverScreen state={state} />;
+  if (state.phase === GamePhase.GameOver || state.phase === GamePhase.Victory) return <GameOverScreen state={state} dispatch={dispatch} />;
 
   const footItem = state.floor.items.find(i => i.floorPos?.x === state.player.pos.x && i.floorPos?.y === state.player.pos.y);
   const onStairs = state.player.pos.x === state.floor.stairsPos.x && state.player.pos.y === state.floor.stairsPos.y;

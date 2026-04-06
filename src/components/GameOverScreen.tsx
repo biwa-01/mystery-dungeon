@@ -6,9 +6,10 @@ import { DEATH_QUOTES, VICTORY_LINES } from '@/engine/data/atmosphere';
 
 interface Props {
   state: GameState;
+  dispatch: React.Dispatch<import('@/types/game').GameAction>;
 }
 
-export default function GameOverScreen({ state }: Props) {
+export default function GameOverScreen({ state, dispatch }: Props) {
   const isVictory = state.phase === GamePhase.Victory;
   const [fadeIn, setFadeIn] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -209,8 +210,7 @@ export default function GameOverScreen({ state }: Props) {
             {/* #28 Retry button that goes to title */}
             <button
               onClick={() => {
-                // Trigger Enter key event to go back to title
-                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+                dispatch({ type: 'RETURN_TO_VILLAGE' });
               }}
               style={{
                 fontFamily: 'var(--font-display)',
