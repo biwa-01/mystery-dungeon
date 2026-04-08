@@ -66,12 +66,13 @@ export default function TitleScreen({ dispatch }: Props) {
         { id: 'options', label: '設定' },
       ];
 
-  // Handle menu selection
-  const handleSelect = useCallback(() => {
+  // Handle menu selection — accepts optional index override for click handlers
+  const handleSelect = useCallback((indexOverride?: number) => {
     if (!menuVisible || phase !== 'title') return;
     ensureAudio();
     sfxMenuSelect();
-    const selected = menuItems[menuCursor];
+    const idx = indexOverride ?? menuCursor;
+    const selected = menuItems[idx];
     if (selected.id === 'continue') {
       const saved = loadGame();
       if (saved) {
@@ -399,7 +400,7 @@ export default function TitleScreen({ dispatch }: Props) {
                   onClick={() => {
                     ensureAudio();
                     setMenuCursor(i);
-                    setTimeout(() => handleSelect(), 50);
+                    handleSelect(i);
                   }}
                   onMouseEnter={() => {
                     if (i !== menuCursor) {
