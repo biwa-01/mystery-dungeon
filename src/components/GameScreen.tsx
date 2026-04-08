@@ -29,17 +29,20 @@ import {
   sfxStaffWave, sfxItemPickupMaterial, modulateBGMTension,
 } from '@/engine/audio';
 
-// Responsive scaling hook — returns scale factor for transform: scale()
+// Responsive scaling — on mobile, scale to full width; on desktop, fit in viewport
 function useResponsiveScale(baseW: number, baseH: number) {
-  const [scale, setScale] = useState(1);
+  const [info, setInfo] = useState({ scale: 1, isMobile: false });
   useEffect(() => {
     function calc() {
-      // Use visualViewport for accurate mobile dimensions (handles Safari address bar)
       const vw = window.visualViewport?.width ?? window.innerWidth;
       const vh = window.visualViewport?.height ?? window.innerHeight;
-      const sx = vw / baseW;
-      const sy = vh / baseH;
-      setScale(Math.min(sx, sy, 1));
+      const isMobile = vw <= 840 || ('ontouchstart' in window);
+      if (!isMobile) {
+        setInfo({ scale: Math.min(vw / baseW, vh / baseH, 1), isMobile: false });
+      } else {
+        // Mobile: scale to fill width, game sits at top
+        setInfo({ scale: vw / baseW, isMobile: true });
+      }
     }
     calc();
     window.addEventListener('resize', calc);
@@ -51,12 +54,12 @@ function useResponsiveScale(baseW: number, baseH: number) {
       window.visualViewport?.removeEventListener('resize', calc);
     };
   }, [baseW, baseH]);
-  return scale;
+  return info;
 }
 
 export default function GameScreen() {
   const { state, dispatch } = useGame();
-  const gameScale = useResponsiveScale(800, 600);
+  const { scale: gameScale, isMobile } = useResponsiveScale(800, 600);
 
   const [screenShake, setScreenShake] = useState({ x: 0, y: 0 });
   const [damageFlash, setDamageFlash] = useState(0);
@@ -408,15 +411,22 @@ export default function GameScreen() {
   const onStairs = state.player.pos.x === state.floor.stairsPos.x && state.player.pos.y === state.floor.stairsPos.y;
 
   return (
-    <div className="game-viewport h-screen flex flex-col items-center justify-center select-none overflow-hidden"
-      style={{ background: '#050508', fontFamily: 'var(--font-game)' }}>
+    <div className="game-viewport flex flex-col select-none overflow-hidden"
+      style={{
+        background: '#050508',
+        fontFamily: 'var(--font-game)',
+        height: '100dvh',
+        alignItems: isMobile ? 'stretch' : 'center',
+        justifyContent: isMobile ? 'flex-start' : 'center',
+      }}>
 
-      {/* Main game container - scales to fit viewport */}
-      {/* Wrapper: actual viewport size, clips the scaled content */}
+      {/* Wrapper: clips the scaled game content */}
       <div style={{
         width: Math.floor(800 * gameScale),
         height: Math.floor(600 * gameScale),
         overflow: 'hidden',
+        flexShrink: 0,
+        ...(isMobile ? {} : { alignSelf: 'center' }),
       }}>
       <div className="game-container relative" style={{
         width: 800,
@@ -605,10 +615,11 @@ export default function GameScreen() {
             }} />
         )}
 
-        {/* Mobile touch controls */}
-        <TouchControls dispatch={dispatch} phase={state.phase} menuMode={state.menuMode} />
       </div>
       </div>{/* end wrapper */}
+
+      {/* Mobile touch controls — below the game, fills remaining space */}
+      <TouchControls dispatch={dispatch} phase={state.phase} menuMode={state.menuMode} />
 
       <style jsx>{`
         @keyframes deathPulse {

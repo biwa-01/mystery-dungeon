@@ -210,6 +210,7 @@ export default function CombatLogPanel({ logs, showHistory }: Props) {
 
       <div
         ref={scrollRef}
+        className="combat-log-main"
         style={{
           background: 'rgba(0,0,0,0.65)',
           height: '96px',

@@ -237,9 +237,17 @@ html {
   height: 100dvh;
 }
 
-/* Mobile: hide desktop control hints */
+/* Mobile: hide desktop control hints, compact combat log */
 @media (pointer: coarse) {
   .desktop-hints {
+    display: none !important;
+  }
+  .combat-log-main {
+    height: 40px !important;
+    background: rgba(0,0,0,0.4) !important;
+    padding: 2px 8px !important;
+  }
+  .combat-log-main > div:not(:last-child) {
     display: none !important;
   }
 }
