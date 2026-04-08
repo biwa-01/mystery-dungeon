@@ -73,6 +73,7 @@ function deserializeState(json: string): GameState | null {
   if (parsed.monsterHouseCleared === undefined) parsed.monsterHouseCleared = false;
   if (parsed.storageCapacity === undefined) parsed.storageCapacity = 20;
   if (parsed.villageShopSeed === undefined) parsed.villageShopSeed = Date.now();
+  if (parsed.playerName === undefined) parsed.playerName = '冒険者';
 
   return {
     ...parsed,

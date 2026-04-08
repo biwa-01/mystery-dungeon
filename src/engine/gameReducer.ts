@@ -190,6 +190,7 @@ function generateNewFloor(state: GameState): GameState {
 export function createInitialState(): GameState {
   return {
     phase: GamePhase.Title,
+    playerName: '冒険者',
     player: createInitialPlayer(),
     floor: {
       width: MAP_WIDTH,
@@ -851,6 +852,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_GAME': {
       const fresh = createInitialState();
       fresh.phase = GamePhase.Village;
+      if (action.type === 'NEW_GAME' && action.playerName) {
+        fresh.playerName = action.playerName;
+      }
       fresh.seed = Date.now();
       // Generate fake name map for this run (seeded so consistent within a run)
       fresh.itemNameMap = generateFakeNameMap(fresh.seed);
@@ -886,8 +890,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       applyFakeNamesToFloor(newState);
       addLog(newState, `不思議のダンジョン 地下${newState.floorNumber}F`, 'system');
       addLog(newState, getFloorMessage(newState.floorNumber), 'info');
-      addLog(newState, '「不思議のダンジョンの奥に、伝説の財宝があるらしい...」', 'info');
-      addLog(newState, '「よし、行ってみよう！」', 'info');
+      addLog(newState, `${newState.playerName}「不思議のダンジョンの奥に、伝説の財宝があるらしい...」`, 'info');
+      addLog(newState, `${newState.playerName}「よし、行ってみよう！」`, 'info');
       return newState;
     }
 

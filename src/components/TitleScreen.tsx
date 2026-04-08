@@ -6,7 +6,7 @@ import { PROLOGUE_LINES } from '@/engine/data/atmosphere';
 import { initAudio, startTitleBGM, sfxMenuSelect, sfxMenuMove } from '@/engine/audio';
 import { GameAction, GameState } from '@/types/game';
 
-type Phase = 'title' | 'prologue' | 'ready';
+type Phase = 'title' | 'name_input' | 'prologue' | 'ready';
 
 interface Props {
   dispatch: React.Dispatch<GameAction>;
@@ -21,6 +21,8 @@ export default function TitleScreen({ dispatch }: Props) {
   const [titleReady, setTitleReady] = useState(false);
   const [subtitleVisible, setSubtitleVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const audioStartedRef = useRef(false);
@@ -83,17 +85,24 @@ export default function TitleScreen({ dispatch }: Props) {
       // #30 Options menu toggle
       setShowOptions(prev => !prev);
     } else {
-      // New game - delete old save, show prologue
+      // New game - show name input
       deleteSave();
-      setPhase('prologue');
+      setPhase('name_input');
+      setTimeout(() => nameInputRef.current?.focus(), 100);
     }
   }, [menuVisible, phase, menuCursor, menuItems, dispatch, ensureAudio]);
+
+  // Handle name input confirmation
+  const handleNameConfirm = useCallback(() => {
+    sfxMenuSelect();
+    setPhase('prologue');
+  }, []);
 
   // Handle prologue completion
   const handlePrologueComplete = useCallback(() => {
     sfxMenuSelect();
-    dispatch({ type: 'NEW_GAME' });
-  }, [dispatch]);
+    dispatch({ type: 'NEW_GAME', playerName: playerName.trim() || '冒険者' });
+  }, [dispatch, playerName]);
 
   // Keyboard input
   useEffect(() => {
@@ -125,6 +134,12 @@ export default function TitleScreen({ dispatch }: Props) {
             handleSelect();
             break;
         }
+      } else if (phase === 'name_input') {
+        // Let input handle keys, only intercept Enter
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleNameConfirm();
+        }
       } else if (phase === 'prologue') {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -141,7 +156,7 @@ export default function TitleScreen({ dispatch }: Props) {
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [phase, menuVisible, menuItems.length, handleSelect, handlePrologueComplete]);
+  }, [phase, menuVisible, menuItems.length, handleSelect, handleNameConfirm, handlePrologueComplete]);
 
   // Atmospheric background canvas
   useEffect(() => {
@@ -408,6 +423,68 @@ export default function TitleScreen({ dispatch }: Props) {
               <div>移動 ― 矢印 / hjkl / タッチ操作</div>
               <div>足踏 Space / 拾う G / 階段 S / 持物 I</div>
             </div>
+          </div>
+        )}
+
+        {/* ====== NAME INPUT PHASE ====== */}
+        {phase === 'name_input' && (
+          <div className="flex flex-col items-center w-full max-w-xs">
+            <div className="w-36 gold-line mb-6" />
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              color: '#c9a84c',
+              fontSize: '16px',
+              letterSpacing: '0.15em',
+              marginBottom: '24px',
+            }}>
+              名前を入力
+            </div>
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value.slice(0, 8))}
+              placeholder="冒険者"
+              maxLength={8}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-display)',
+                fontSize: '18px',
+                letterSpacing: '0.1em',
+                color: '#c9a84c',
+                background: 'rgba(201,168,76,0.06)',
+                border: '1px solid rgba(201,168,76,0.3)',
+                borderRadius: '6px',
+                outline: 'none',
+                textAlign: 'center',
+                caretColor: '#c9a84c',
+              }}
+              onFocus={e => e.target.style.borderColor = 'rgba(201,168,76,0.5)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(201,168,76,0.3)'}
+            />
+            <div style={{ color: '#3a3530', fontSize: '10px', marginTop: '8px' }}>
+              最大8文字 / 空欄で「冒険者」
+            </div>
+            <button
+              onClick={handleNameConfirm}
+              style={{
+                marginTop: '24px',
+                padding: '10px 32px',
+                fontFamily: 'var(--font-display)',
+                fontSize: '14px',
+                letterSpacing: '0.15em',
+                color: '#c9a84c',
+                background: 'rgba(201,168,76,0.08)',
+                border: '1px solid rgba(201,168,76,0.3)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              決定
+            </button>
+            <div className="w-36 gold-line mt-8" />
           </div>
         )}
 

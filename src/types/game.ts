@@ -318,6 +318,7 @@ export enum MenuMode {
 
 export interface GameState {
   phase: GamePhase;
+  playerName: string;
   player: Player;
   floor: DungeonFloor;
   floorNumber: number;
@@ -377,7 +378,7 @@ export type GameAction =
   | { type: 'MENU_CONFIRM' }
   | { type: 'OPEN_FLOOR_MENU' }
   | { type: 'START_GAME' }
-  | { type: 'NEW_GAME' }
+  | { type: 'NEW_GAME'; playerName?: string }
   | { type: 'LOAD_GAME'; state: GameState }
   | { type: 'RETURN_TO_TITLE' }
   | { type: 'ENTER_DUNGEON' }
