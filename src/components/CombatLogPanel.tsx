@@ -175,13 +175,14 @@ export default function CombatLogPanel({ logs, showHistory }: Props) {
       {showHistory && (
         <div
           ref={historyScrollRef}
+          className="combat-log-history"
           style={{
             position: 'absolute',
             bottom: '100%',
             left: 0,
             right: 0,
-            background: 'rgba(0,0,0,0.88)',
-            maxHeight: '300px',
+            background: 'rgba(0,0,0,0.92)',
+            maxHeight: '280px',
             overflowY: 'auto',
             padding: '8px 12px',
             fontFamily: 'var(--font-game), monospace',
@@ -189,7 +190,7 @@ export default function CombatLogPanel({ logs, showHistory }: Props) {
             zIndex: 50,
           }}
         >
-          <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px' }}>-- LOG HISTORY (L: close) --</div>
+          <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px' }}>-- ログ履歴 --</div>
           {logs.slice(-20).map((log, i) => {
             const icon = TYPE_ICONS[log.type];
             return (

@@ -243,12 +243,16 @@ html {
     display: none !important;
   }
   .combat-log-main {
-    height: 40px !important;
-    background: rgba(0,0,0,0.4) !important;
+    height: 32px !important;
+    background: rgba(0,0,0,0.35) !important;
     padding: 2px 8px !important;
   }
   .combat-log-main > div:not(:last-child) {
     display: none !important;
+  }
+  .combat-log-history {
+    max-height: 150px !important;
+    font-size: 10px !important;
   }
 }
 

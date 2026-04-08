@@ -320,7 +320,7 @@ export default function TitleScreen({ dispatch }: Props) {
             <div className={`transition-all duration-[1800ms] ${subtitleVisible ? 'opacity-100' : 'opacity-0'}`}>
               <div className="text-xs tracking-[0.6em] uppercase mb-2"
                 style={{ fontFamily: 'var(--font-display)', color: '#3d3528' }}>
-                Dragon Quest Series
+                Roguelike Adventure
               </div>
             </div>
 
@@ -349,7 +349,7 @@ export default function TitleScreen({ dispatch }: Props) {
                 fontWeight: 700,
                 textShadow: '0 0 20px rgba(201,168,76,0.15)',
               }}>
-                トルネコの大冒険
+                黄金の腕輪と消えた父
               </div>
             </div>
 

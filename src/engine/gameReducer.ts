@@ -886,8 +886,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       applyFakeNamesToFloor(newState);
       addLog(newState, `不思議のダンジョン 地下${newState.floorNumber}F`, 'system');
       addLog(newState, getFloorMessage(newState.floorNumber), 'info');
-      addLog(newState, 'トルネコ「不思議のダンジョンの奥に、伝説の財宝があるらしい...」', 'info');
-      addLog(newState, 'トルネコ「よし、行ってみよう！」', 'info');
+      addLog(newState, '「不思議のダンジョンの奥に、伝説の財宝があるらしい...」', 'info');
+      addLog(newState, '「よし、行ってみよう！」', 'info');
       return newState;
     }
 
