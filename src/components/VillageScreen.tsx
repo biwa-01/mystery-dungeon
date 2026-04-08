@@ -3637,11 +3637,13 @@ export default function VillageScreen({ state, dispatch }: Props) {
         position: 'relative',
         ...(villageMobile ? {} : { alignSelf: 'center' }),
       }}>
-      <div className="game-container relative" style={{
+      <div className="game-container" style={{
         width: CW, height: CH,
         transform: `scale(${villageScale})`,
-        transformOrigin: 'top center',
-        ...(villageMobile ? { marginLeft: (villageVw - CW * villageScale) / 2 } : {}),
+        transformOrigin: 'top left',
+        position: villageMobile ? 'absolute' : 'relative',
+        left: villageMobile ? (villageVw - CW * villageScale) / 2 : undefined,
+        top: villageMobile ? 0 : undefined,
       }}>
         <canvas
           ref={canvasRef}

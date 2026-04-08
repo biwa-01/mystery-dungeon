@@ -432,13 +432,14 @@ export default function GameScreen() {
         position: 'relative',
         ...(isMobile ? {} : { alignSelf: 'center' }),
       }}>
-      <div className="game-container relative" style={{
+      <div className="game-container" style={{
         width: 800,
         height: 600,
         transform: `scale(${gameScale})`,
-        transformOrigin: 'top center',
-        // On mobile, center the wider canvas horizontally
-        ...(isMobile ? { marginLeft: (vw - 800 * gameScale) / 2 } : {}),
+        transformOrigin: 'top left',
+        position: isMobile ? 'absolute' : 'relative',
+        left: isMobile ? (vw - 800 * gameScale) / 2 : undefined,
+        top: isMobile ? 0 : undefined,
         // #25: Low HP red border pulse
         boxShadow: lowHpPulse > 0 ? `inset 0 0 ${20 + lowHpPulse * 30}px rgba(200,30,30,${lowHpPulse * 0.4})` : 'none',
         transition: 'box-shadow 0.1s',
