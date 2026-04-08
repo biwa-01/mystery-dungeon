@@ -29,19 +29,22 @@ import {
   sfxStaffWave, sfxItemPickupMaterial, modulateBGMTension,
 } from '@/engine/audio';
 
-// Responsive scaling — on mobile, scale to full width; on desktop, fit in viewport
+// Responsive scaling — mobile: zoom into center of canvas for bigger game view
 function useResponsiveScale(baseW: number, baseH: number) {
-  const [info, setInfo] = useState({ scale: 1, isMobile: false });
+  const [info, setInfo] = useState({ scale: 1, isMobile: false, gameH: baseH, vw: baseW });
   useEffect(() => {
     function calc() {
       const vw = window.visualViewport?.width ?? window.innerWidth;
       const vh = window.visualViewport?.height ?? window.innerHeight;
       const isMobile = vw <= 840 || ('ontouchstart' in window);
       if (!isMobile) {
-        setInfo({ scale: Math.min(vw / baseW, vh / baseH, 1), isMobile: false });
+        setInfo({ scale: Math.min(vw / baseW, vh / baseH, 1), isMobile: false, gameH: baseH, vw });
       } else {
-        // Mobile: scale to fill width, game sits at top
-        setInfo({ scale: vw / baseW, isMobile: true });
+        // Mobile: scale so game fills ~60% of viewport height
+        // This makes the game WIDER than screen — we clip the sides
+        const targetH = vh * 0.58;
+        const s = targetH / baseH;
+        setInfo({ scale: s, isMobile: true, gameH: Math.floor(targetH), vw });
       }
     }
     calc();
@@ -59,7 +62,7 @@ function useResponsiveScale(baseW: number, baseH: number) {
 
 export default function GameScreen() {
   const { state, dispatch } = useGame();
-  const { scale: gameScale, isMobile } = useResponsiveScale(800, 600);
+  const { scale: gameScale, isMobile, gameH, vw } = useResponsiveScale(800, 600);
 
   const [screenShake, setScreenShake] = useState({ x: 0, y: 0 });
   const [damageFlash, setDamageFlash] = useState(0);
@@ -420,19 +423,22 @@ export default function GameScreen() {
         justifyContent: isMobile ? 'flex-start' : 'center',
       }}>
 
-      {/* Wrapper: clips the scaled game content */}
+      {/* Wrapper: on mobile, clips wider canvas to screen width, centered */}
       <div style={{
-        width: Math.floor(800 * gameScale),
-        height: Math.floor(600 * gameScale),
+        width: isMobile ? vw : Math.floor(800 * gameScale),
+        height: isMobile ? gameH : Math.floor(600 * gameScale),
         overflow: 'hidden',
         flexShrink: 0,
+        position: 'relative',
         ...(isMobile ? {} : { alignSelf: 'center' }),
       }}>
       <div className="game-container relative" style={{
         width: 800,
         height: 600,
         transform: `scale(${gameScale})`,
-        transformOrigin: 'top left',
+        transformOrigin: 'top center',
+        // On mobile, center the wider canvas horizontally
+        ...(isMobile ? { marginLeft: (vw - 800 * gameScale) / 2 } : {}),
         // #25: Low HP red border pulse
         boxShadow: lowHpPulse > 0 ? `inset 0 0 ${20 + lowHpPulse * 30}px rgba(200,30,30,${lowHpPulse * 0.4})` : 'none',
         transition: 'box-shadow 0.1s',

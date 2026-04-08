@@ -9,18 +9,20 @@ import { ITEM_TEMPLATES } from '@/engine/data/items';
 import TouchControls from './TouchControls';
 import { GamePhase, MenuMode } from '@/types/game';
 
-// Responsive scaling hook for mobile — scale to fill width on mobile
+// Responsive scaling hook for mobile — zoom into center for bigger game view
 function useVillageScale(baseW: number, baseH: number) {
-  const [info, setInfo] = useState({ scale: 1, isMobile: false });
+  const [info, setInfo] = useState({ scale: 1, isMobile: false, gameH: baseH, vw: baseW });
   useEffect(() => {
     function calc() {
       const vw = window.visualViewport?.width ?? window.innerWidth;
       const vh = window.visualViewport?.height ?? window.innerHeight;
       const isMobile = vw <= 840 || ('ontouchstart' in window);
       if (!isMobile) {
-        setInfo({ scale: Math.min(vw / baseW, vh / baseH, 1), isMobile: false });
+        setInfo({ scale: Math.min(vw / baseW, vh / baseH, 1), isMobile: false, gameH: baseH, vw });
       } else {
-        setInfo({ scale: vw / baseW, isMobile: true });
+        const targetH = vh * 0.58;
+        const s = targetH / baseH;
+        setInfo({ scale: s, isMobile: true, gameH: Math.floor(targetH), vw });
       }
     }
     calc();
@@ -328,7 +330,7 @@ type OverlayMode =
 //  Component
 // ================================================================
 export default function VillageScreen({ state, dispatch }: Props) {
-  const { scale: villageScale, isMobile: villageMobile } = useVillageScale(CW, CH);
+  const { scale: villageScale, isMobile: villageMobile, gameH: villageGameH, vw: villageVw } = useVillageScale(CW, CH);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const [assetsReady, setAssetsReady] = useState(_villageAssetsLoaded);
@@ -3626,18 +3628,20 @@ export default function VillageScreen({ state, dispatch }: Props) {
         alignItems: villageMobile ? 'stretch' : 'center',
         justifyContent: villageMobile ? 'flex-start' : 'center',
       }}>
-      {/* Wrapper: clips the scaled content */}
+      {/* Wrapper: on mobile, clips wider canvas to screen width */}
       <div style={{
-        width: Math.floor(CW * villageScale),
-        height: Math.floor(CH * villageScale),
+        width: villageMobile ? villageVw : Math.floor(CW * villageScale),
+        height: villageMobile ? villageGameH : Math.floor(CH * villageScale),
         overflow: 'hidden',
         flexShrink: 0,
+        position: 'relative',
         ...(villageMobile ? {} : { alignSelf: 'center' }),
       }}>
       <div className="game-container relative" style={{
         width: CW, height: CH,
         transform: `scale(${villageScale})`,
-        transformOrigin: 'top left',
+        transformOrigin: 'top center',
+        ...(villageMobile ? { marginLeft: (villageVw - CW * villageScale) / 2 } : {}),
       }}>
         <canvas
           ref={canvasRef}

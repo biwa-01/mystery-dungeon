@@ -100,8 +100,8 @@ export default function TouchControls({ dispatch, phase, menuMode }: Props) {
 
   return (
     <div style={{
-      flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-      padding: '8px 10px 0', touchAction: 'none', maxHeight: 200,
+      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '4px 10px', touchAction: 'none',
     }}>
       {/* D-Pad (left side) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 46px)', gridTemplateRows: 'repeat(3, 46px)', gap: '1px' }}>
