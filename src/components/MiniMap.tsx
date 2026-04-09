@@ -7,7 +7,7 @@ interface Props {
   state: GameState;
 }
 
-const PIXEL = 2;
+const PIXEL = 3;
 
 export default function MiniMap({ state }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -164,7 +164,7 @@ export default function MiniMap({ state }: Props) {
       borderRadius: '4px',
       border: '1px solid rgba(255,255,255,0.1)',
       padding: '3px',
-      maxWidth: '140px',
+      maxWidth: '200px',
     }}>
       <canvas
         ref={canvasRef}
